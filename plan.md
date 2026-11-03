@@ -1,7 +1,7 @@
 # Prox Download Bot – Remod Plan
 
 **Original project:** https://github.com/gaowanliang/DownloadBot  
-**New upstream:** https://github.com/spaulll/prox-download-bot  
+**New upstream:** https://github.com/spaulll/AriaFlow  
 **Git user:** spaulll  
 
 **License:** Apache-2.0  
@@ -25,7 +25,7 @@ Work in phases. Update todos after every task. Short keyword-style commits.
 - [x] Keep `LICENSE` (Apache-2.0) and add proper attribution
 - [x] `git init`
 - [x] `git config user.name "spaulll"`
-- [x] `git remote add origin https://github.com/spaulll/prox-download-bot.git`
+- [x] `git remote add origin https://github.com/spaulll/AriaFlow.git`
 - [x] First commit: `init: clean slate from DownloadBot`
 
 **Commit keywords:** `init:`, `chore: remove chinese`, `chore: drop cloud upload`, `chore: drop docs imgs`

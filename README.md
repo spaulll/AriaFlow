@@ -129,7 +129,7 @@ Supported platforms: **Linux `amd64` and `arm64`** (prebuilt binaries and CI).
 > [Recommended: Docker Compose](#recommended-docker-compose).
 
 1. Grab the binary for your arch from the
-   [**Releases**](https://github.com/spaulll/prox-download-bot/releases):
+   [**Releases**](https://github.com/spaulll/AriaFlow/releases):
 
    | File | Platform |
    |------|----------|
@@ -660,8 +660,8 @@ With the local server, the bot:
 Requirements: **Go 1.24+**, vendored deps (`-mod=vendor`).
 
 ```bash
-git clone https://github.com/spaulll/prox-download-bot.git
-cd prox-download-bot
+git clone https://github.com/spaulll/AriaFlow.git
+cd AriaFlow
 go build -mod=vendor -trimpath -ldflags "-s -w" -o ariaflow ./cmd/DownloadBot
 ./ariaflow -c ./config.json
 ```
