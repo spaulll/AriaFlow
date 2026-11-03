@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.7.0 - 2026-11-03
+
+### Added
+- **Docker Compose deployment** — now the recommended path. A
+  `docker-compose.yml` plus `docker/` stack runs the bot, an `aria2c`
+  daemon, and an optional local Bot API server as containers sharing one
+  media volume; no manual binary or dependency installation.
+- **Project renamed to AriaFlow**: the Go module, binary, and release
+  artifacts are now `ariaflow` (`ariaflow-linux-amd64` / `-arm64`), and the
+  GitHub repository moved to `spaulll/AriaFlow`.
+- Docker image bundles the full runtime toolset, including `unrar` (non-free)
+  alongside yt-dlp, ffmpeg/ffprobe, 7z and unzip.
+
+### Changed
+- README restructured to lead with the Docker quick start; the prebuilt-binary
+  path is documented as the alternative.
+- Containerized build no longer silently drops `unrar` (non-free repo enabled).
+
 ## v0.6.1 - 2026-10-07
 
 ### Fixed
