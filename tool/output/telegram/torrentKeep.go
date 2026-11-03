@@ -1,10 +1,10 @@
 package telegram
 
 import (
-	"DownloadBot/internal/config"
-	"DownloadBot/internal/users"
-	"DownloadBot/tool/input"
-	logger "DownloadBot/tool/zap"
+	"ariaflow/internal/config"
+	"ariaflow/internal/users"
+	"ariaflow/tool/input"
+	logger "ariaflow/tool/zap"
 	"fmt"
 	"io"
 	"os"

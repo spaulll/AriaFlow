@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"DownloadBot/internal/config"
-	logger "DownloadBot/tool/zap"
+	"ariaflow/internal/config"
+	logger "ariaflow/tool/zap"
 	"io"
 	"math/rand"
 	"os"

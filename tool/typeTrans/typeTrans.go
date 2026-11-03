@@ -1,7 +1,7 @@
 package typeTrans
 
 import (
-	logger "DownloadBot/tool/zap"
+	logger "ariaflow/tool/zap"
 	"strconv"
 )
 

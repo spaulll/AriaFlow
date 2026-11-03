@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render config.json for prox-download-bot from environment variables.
+"""Render config.json for ariaflow from environment variables.
 
 The Go binary reads config from a JSON file only (no env substitution), so we
 generate it here at container start. This mirrors the logic in setup.sh.

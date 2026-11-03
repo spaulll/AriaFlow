@@ -1,12 +1,12 @@
 package aria2
 
 import (
-	i18nLoc "DownloadBot/i18n"
-	"DownloadBot/internal/config"
-	rpc2 "DownloadBot/tool/input/aria2/rpc"
-	"DownloadBot/tool/monitor"
-	"DownloadBot/tool/typeTrans"
-	logger "DownloadBot/tool/zap"
+	i18nLoc "ariaflow/i18n"
+	"ariaflow/internal/config"
+	rpc2 "ariaflow/tool/input/aria2/rpc"
+	"ariaflow/tool/monitor"
+	"ariaflow/tool/typeTrans"
+	logger "ariaflow/tool/zap"
 	"context"
 	"fmt"
 	"log"

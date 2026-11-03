@@ -1,13 +1,13 @@
 package telegram
 
 import (
-	i18nLoc "DownloadBot/i18n"
-	"DownloadBot/tool/displayUtil/gotree"
-	"DownloadBot/tool/input"
-	"DownloadBot/tool/input/aria2"
-	"DownloadBot/tool/input/aria2/rpc"
-	"DownloadBot/tool/typeTrans"
-	logger "DownloadBot/tool/zap"
+	i18nLoc "ariaflow/i18n"
+	"ariaflow/tool/displayUtil/gotree"
+	"ariaflow/tool/input"
+	"ariaflow/tool/input/aria2"
+	"ariaflow/tool/input/aria2/rpc"
+	"ariaflow/tool/typeTrans"
+	logger "ariaflow/tool/zap"
 	"fmt"
 	tgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"math/rand"

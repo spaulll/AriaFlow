@@ -10,4 +10,4 @@ CFG=/app/config.json
 python3 /app/render_config.py > "$CFG"
 chmod 600 "$CFG"
 
-exec /app/DownloadBot -c "$CFG"
+exec /app/ariaflow -c "$CFG"

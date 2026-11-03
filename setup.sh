@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# prox-download-bot one-shot setup.
+# ariaflow one-shot setup.
 #
 # Non-interactive: pass values via environment variables (see --help).
 # Interactive:     ./setup.sh -i
@@ -14,7 +14,7 @@ WITH_SYSTEMD=ask
 START_NOW=ask
 FORCE=0
 
-INSTALL_DIR="${INSTALL_DIR:-/opt/prox-download-bot}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/ariaflow}"
 DOWNLOAD_FOLDER="${DOWNLOAD_FOLDER:-/mnt/nas/downloads}"
 LIBRARY_ROOT="${LIBRARY_ROOT:-/mnt/nas}"
 ARIA2_SECRET="${ARIA2_SECRET:-}"
@@ -40,7 +40,7 @@ ERR_PATH="${ERR_PATH:-}"
 
 BOT_SOURCE="${BOT_SOURCE:-auto}"
 API_SERVER_SOURCE="${API_SERVER_SOURCE:-auto}"
-REPO_URL="${REPO_URL:-https://github.com/spaulll/prox-download-bot}"
+REPO_URL="${REPO_URL:-https://github.com/spaulll/ariaflow}"
 
 C_RESET=$'\033[0m'; C_INFO=$'\033[36m'; C_WARN=$'\033[33m'; C_ERR=$'\033[31m'; C_OK=$'\033[32m'
 
@@ -51,7 +51,7 @@ die()  { printf '%sERROR: %s%s\n' "$C_ERR" "$*" "$C_RESET" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-prox-download-bot setup
+ariaflow setup
 
 Usage: sudo ./setup.sh [options]
 
@@ -59,7 +59,7 @@ Options:
   -i                 interactive mode (prompt for every value)
   -y                 assume "yes" for confirmations
   -f                 overwrite existing config.json / units without asking
-  --install-dir DIR      install location            (default /opt/prox-download-bot)
+  --install-dir DIR      install location            (default /opt/ariaflow)
   --download-folder DIR  aria2 download dir          (default /mnt/nas/downloads)
   --library-root DIR     media library root          (default /mnt/nas)
   --no-deps              do not install system packages
@@ -289,7 +289,7 @@ install_ytdlp() {
 
 build_or_fetch_bot() {
   mkdir -p "$INSTALL_DIR"
-  if [ -x "$INSTALL_DIR/DownloadBot" ] && [ "${FORCE:-0}" != 1 ]; then ok "DownloadBot already present"; BOT_READY=1; return 0; fi
+  if [ -x "$INSTALL_DIR/ariaflow" ] && [ "${FORCE:-0}" != 1 ]; then ok "ariaflow already present"; BOT_READY=1; return 0; fi
 
   local mode="$BOT_SOURCE"
   if [ "$mode" = auto ]; then
@@ -297,20 +297,20 @@ build_or_fetch_bot() {
   fi
 
   case "$mode" in
-    path:*) cp -f "${mode#path:}" "$INSTALL_DIR/DownloadBot" && chmod +x "$INSTALL_DIR/DownloadBot" ;;
+    path:*) cp -f "${mode#path:}" "$INSTALL_DIR/ariaflow" && chmod +x "$INSTALL_DIR/ariaflow" ;;
     build)
       have go || die "go toolchain not found (install Go 1.24+, or use --bot-source download)"
       log "building bot from source..."
-      ( cd "$(dirname "$0")" && go build -mod=vendor -trimpath -ldflags "-s -w" -o "$INSTALL_DIR/DownloadBot" ./cmd/DownloadBot ) \
+      ( cd "$(dirname "$0")" && go build -mod=vendor -trimpath -ldflags "-s -w" -o "$INSTALL_DIR/ariaflow" ./cmd/DownloadBot ) \
         || die "bot build failed" ;;
     download)
-      local asset="DownloadBot-linux-$GOARCH"
+      local asset="ariaflow-linux-$GOARCH"
       log "downloading latest release binary ($asset)..."
-      curl -fL "$REPO_URL/releases/latest/download/$asset" -o "$INSTALL_DIR/DownloadBot" || die "download failed"
-      chmod +x "$INSTALL_DIR/DownloadBot" ;;
+      curl -fL "$REPO_URL/releases/latest/download/$asset" -o "$INSTALL_DIR/ariaflow" || die "download failed"
+      chmod +x "$INSTALL_DIR/ariaflow" ;;
     *) die "invalid --bot-source: $mode" ;;
   esac
-  ok "bot ready at $INSTALL_DIR/DownloadBot"
+  ok "bot ready at $INSTALL_DIR/ariaflow"
 }
 
 write_run_tg_api() {
@@ -463,7 +463,7 @@ UNIT
   if [ "$WITH_API_SERVER" = yes ]; then
     cat > /etc/systemd/system/tg-bot-api.service <<UNIT
 [Unit]
-Description=Telegram Bot API server (local mode, prox-download-bot backend)
+Description=Telegram Bot API server (local mode, ariaflow backend)
 After=network-online.target
 Wants=network-online.target
 
@@ -483,7 +483,7 @@ UNIT
 
   cat > /etc/systemd/system/downloadbot.service <<UNIT
 [Unit]
-Description=prox-download-bot (Telegram Aria2 bot)
+Description=ariaflow (Telegram Aria2 bot)
 After=network-online.target aria2c.service$api_after
 Wants=network-online.target
 Requires=aria2c.service$api_requires
@@ -493,7 +493,7 @@ Type=simple
 User=root
 Group=root
 WorkingDirectory=$INSTALL_DIR
-ExecStart=$INSTALL_DIR/DownloadBot -c $INSTALL_DIR/config.json
+ExecStart=$INSTALL_DIR/ariaflow -c $INSTALL_DIR/config.json
 Restart=on-failure
 RestartSec=5
 

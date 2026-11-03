@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"DownloadBot/internal/users"
+	"ariaflow/internal/users"
 )
 
 func makeDupLib(t *testing.T) (movies, series, anime string) {

@@ -1,5 +1,5 @@
-# prox-download-bot — bot image.
-# Builds the DownloadBot binary, then wraps it in a runtime image with the
+# AriaFlow — bot image.
+# Builds the ariaflow binary, then wraps it in a runtime image with the
 # tools it shells out to (yt-dlp, ffmpeg, archive extractors).
 
 # syntax=docker/dockerfile:1
@@ -16,7 +16,7 @@ COPY model ./model
 COPY tool ./tool
 
 RUN CGO_ENABLED=0 go build -mod=vendor -trimpath -ldflags "-s -w" \
-      -o /out/DownloadBot ./cmd/DownloadBot
+      -o /out/ariaflow ./cmd/DownloadBot
 
 FROM debian:bookworm-slim AS runtime
 
@@ -37,7 +37,7 @@ RUN if grep -q '^Components:' /etc/apt/sources.list.d/debian.sources 2>/dev/null
       -o /usr/local/bin/yt-dlp \
     && chmod +x /usr/local/bin/yt-dlp
 
-COPY --from=build /out/DownloadBot /app/DownloadBot
+COPY --from=build /out/ariaflow /app/ariaflow
 COPY docker/entrypoint.sh docker/render_config.py /app/
 RUN chmod +x /app/entrypoint.sh
 

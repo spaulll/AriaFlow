@@ -3,7 +3,7 @@
 // the chat forever. The IDs are persisted to a small state file so a restart
 // can clean them up.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 package telegram
 
 import (
@@ -13,7 +13,7 @@ import (
 
 	tgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	logger "DownloadBot/tool/zap"
+	logger "ariaflow/tool/zap"
 )
 
 const inflightFile = "inflight_msgs.json"

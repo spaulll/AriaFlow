@@ -1,4 +1,4 @@
-# docker-compose for prox-download-bot.
+# docker-compose for ariaflow.
 #
 # Services:
 #   aria2        – the downloader daemon (RPC on 6800)
@@ -13,7 +13,7 @@
 # Optional env (only if using the local API server):
 #   API_ID, API_HASH, API_BASE, API_DIR
 
-name: prox-download-bot
+name: ariaflow
 
 services:
   # ------------------------------------------------------------ downloader ---
@@ -21,7 +21,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.aria2
-    image: prox-download-bot/aria2:latest
+    image: ariaflow/aria2:latest
     restart: unless-stopped
     environment:
       ARIA2_SECRET: ${ARIA2_SECRET:?ARIA2_SECRET is required}
@@ -46,7 +46,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.bot
-    image: prox-download-bot/bot:latest
+    image: ariaflow/bot:latest
     restart: unless-stopped
     depends_on:
       aria2:
@@ -84,7 +84,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.tg-bot-api
-    image: prox-download-bot/tg-bot-api:latest
+    image: ariaflow/tg-bot-api:latest
     restart: unless-stopped
     environment:
       # Validated at runtime in the entrypoint, not at compose parse time
@@ -109,4 +109,4 @@ volumes:
   #       o: bind
   #       device: /mnt/nas
   media:
-    name: prox-download-bot-media
+    name: ariaflow-media

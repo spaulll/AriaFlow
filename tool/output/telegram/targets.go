@@ -2,7 +2,7 @@
 // reach BOTH the task owner and all admins (deduplicated). Regular users only
 // ever see their own tasks; admins see everything.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 package telegram
 
 import (
@@ -10,8 +10,8 @@ import (
 
 	tgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"DownloadBot/tool/input"
-	logger "DownloadBot/tool/zap"
+	"ariaflow/tool/input"
+	logger "ariaflow/tool/zap"
 )
 
 // chatMsgID pairs a Telegram chat with one message ID in that chat.

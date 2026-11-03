@@ -1,7 +1,7 @@
 package organize
 
 import (
-	"DownloadBot/internal/extract"
+	"ariaflow/internal/extract"
 )
 
 func NewTestExtractor() *extract.Extractor {

@@ -2,14 +2,14 @@
 // machine) dies mid-extraction, the staging directory leaks and the archive
 // may never get processed. On startup we clean the leftovers and resume.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 package telegram
 
 import (
-	"DownloadBot/internal/config"
-	"DownloadBot/internal/extract"
-	"DownloadBot/tool/input"
-	logger "DownloadBot/tool/zap"
+	"ariaflow/internal/config"
+	"ariaflow/internal/extract"
+	"ariaflow/tool/input"
+	logger "ariaflow/tool/zap"
 	"fmt"
 	"os"
 	"path/filepath"

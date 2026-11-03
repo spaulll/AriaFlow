@@ -1,4 +1,4 @@
-# prox-download-bot
+# AriaFlow
 
 English-only Telegram bot that drives **aria2** and **yt-dlp**, organizes
 finished downloads into a media library (AriaFlow-style), and supports
@@ -88,7 +88,7 @@ it downloads with live progress, then files everything neatly by type.
 ## How it works
 
 ```
-Telegram  ──►  DownloadBot  ──►  aria2c (RPC)  ──►  downloads/  ──►  organizer ──►  media library
+Telegram  ──►  AriaFlow  ──►  aria2c (RPC)  ──►  downloads/  ──►  organizer ──►  media library
                    │                                                                    ▲
                    ├────────►  yt-dlp ───────────────────────────────────────────────────┤
                    │                                                                    │
@@ -133,8 +133,8 @@ Supported platforms: **Linux `amd64` and `arm64`** (prebuilt binaries and CI).
 
    | File | Platform |
    |------|----------|
-   | `DownloadBot-linux-amd64` | Linux x86-64 (most VPS/NAS) |
-   | `DownloadBot-linux-arm64` | Linux ARM 64-bit (Raspberry Pi 4/5 64-bit OS, ARM VPS) |
+   | `ariaflow-linux-amd64` | Linux x86-64 (most VPS/NAS) |
+   | `ariaflow-linux-arm64` | Linux ARM 64-bit (Raspberry Pi 4/5 64-bit OS, ARM VPS) |
 
 2. Install the runtime dependencies (the binary shells out to these —
    it fails without them):
@@ -158,8 +158,8 @@ Supported platforms: **Linux `amd64` and `arm64`** (prebuilt binaries and CI).
 4. Run:
 
    ```bash
-   chmod +x DownloadBot-linux-amd64
-   ./DownloadBot-linux-amd64 -c ./config.json
+   chmod +x ariaflow-linux-amd64
+   ./ariaflow-linux-amd64 -c ./config.json
    ```
 
 The binary embeds its English translations — no sidecar files required.
@@ -291,8 +291,8 @@ launcher `run-tg-api.sh` (reads credentials from `config.json`, passes them
 via environment, runs in `--local` mode):
 
 ```bash
-install -m755 telegram-bot-api /opt/prox-download-bot/telegram-bot-api
-install -m755 run-tg-api.sh     /opt/prox-download-bot/run-tg-api.sh
+install -m755 telegram-bot-api /opt/ariaflow/telegram-bot-api
+install -m755 run-tg-api.sh     /opt/ariaflow/run-tg-api.sh
 ```
 
 Add to `config.json` (see next step): `api-id`, `api-hash`,
@@ -382,14 +382,14 @@ Adjust to the paths used in `config.json`.
 
 ### 7. Build or download the bot
 
-Use a release binary (`DownloadBot-linux-amd64` / `-arm64`) or build from
+Use a release binary (`ariaflow-linux-amd64` / `-arm64`) or build from
 source — see [Building from source](#building-from-source).
 
-Install it (example layout `/opt/prox-download-bot`):
+Install it (example layout `/opt/ariaflow`):
 
 ```bash
-sudo install -m755 DownloadBot-linux-amd64 /opt/prox-download-bot/DownloadBot
-sudo cp config.json /opt/prox-download-bot/config.json
+sudo install -m755 ariaflow-linux-amd64 /opt/ariaflow/ariaflow
+sudo cp config.json /opt/ariaflow/config.json
 ```
 
 ### 8. Run it as systemd services
@@ -399,15 +399,15 @@ the local server from step 4:
 
 ```ini
 [Unit]
-Description=Telegram Bot API server (local mode, prox-download-bot backend)
+Description=Telegram Bot API server (local mode, AriaFlow backend)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/prox-download-bot
-ExecStart=/opt/prox-download-bot/run-tg-api.sh
+WorkingDirectory=/opt/ariaflow
+ExecStart=/opt/ariaflow/run-tg-api.sh
 Restart=on-failure
 RestartSec=5
 
@@ -419,7 +419,7 @@ WantedBy=multi-user.target
 
 ```ini
 [Unit]
-Description=prox-download-bot (Telegram Aria2 bot)
+Description=AriaFlow (Telegram Aria2 bot)
 After=network-online.target aria2c.service tg-bot-api.service
 Wants=network-online.target
 Requires=aria2c.service tg-bot-api.service
@@ -428,8 +428,8 @@ Requires=aria2c.service tg-bot-api.service
 Type=simple
 User=root
 Group=root
-WorkingDirectory=/opt/prox-download-bot
-ExecStart=/opt/prox-download-bot/DownloadBot -c /opt/prox-download-bot/config.json
+WorkingDirectory=/opt/ariaflow
+ExecStart=/opt/ariaflow/ariaflow -c /opt/ariaflow/config.json
 Restart=on-failure
 RestartSec=5
 
@@ -662,15 +662,15 @@ Requirements: **Go 1.24+**, vendored deps (`-mod=vendor`).
 ```bash
 git clone https://github.com/spaulll/prox-download-bot.git
 cd prox-download-bot
-go build -mod=vendor -trimpath -ldflags "-s -w" -o DownloadBot ./cmd/DownloadBot
-./DownloadBot -c ./config.json
+go build -mod=vendor -trimpath -ldflags "-s -w" -o ariaflow ./cmd/DownloadBot
+./ariaflow -c ./config.json
 ```
 
 Cross-compile (supported targets):
 
 ```bash
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-s -w" -o DownloadBot-linux-amd64 ./cmd/DownloadBot
-CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -mod=vendor -trimpath -ldflags "-s -w" -o DownloadBot-linux-arm64 ./cmd/DownloadBot
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags "-s -w" -o ariaflow-linux-amd64 ./cmd/DownloadBot
+CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -mod=vendor -trimpath -ldflags "-s -w" -o ariaflow-linux-arm64 ./cmd/DownloadBot
 ```
 
 Tests:
@@ -690,7 +690,7 @@ Releases are produced by CI on `v*` tags — see
 ```bash
 # from source
 git pull
-go build -mod=vendor -trimpath -ldflags "-s -w" -o DownloadBot ./cmd/DownloadBot
+go build -mod=vendor -trimpath -ldflags "-s -w" -o ariaflow ./cmd/DownloadBot
 sudo systemctl restart downloadbot      # add tg-bot-api if you self-host the API server
 ```
 

@@ -5,13 +5,13 @@
 // (or copied) into the download folder and handed to the normal organize
 // pipeline - no aria2 HTTP fetch involved.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 package telegram
 
 import (
-	"DownloadBot/internal/config"
-	"DownloadBot/tool/typeTrans"
-	logger "DownloadBot/tool/zap"
+	"ariaflow/internal/config"
+	"ariaflow/tool/typeTrans"
+	logger "ariaflow/tool/zap"
 	"context"
 	"fmt"
 	"io"

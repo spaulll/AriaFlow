@@ -1,10 +1,10 @@
 package main
 
 import (
-	i18nLoc "DownloadBot/i18n"
-	"DownloadBot/internal/config"
-	"DownloadBot/tool/output/telegram"
-	logger "DownloadBot/tool/zap"
+	i18nLoc "ariaflow/i18n"
+	"ariaflow/internal/config"
+	"ariaflow/tool/output/telegram"
+	logger "ariaflow/tool/zap"
 	"flag"
 	"sync"
 )

@@ -1,4 +1,4 @@
-module DownloadBot
+module ariaflow
 
 go 1.21
 

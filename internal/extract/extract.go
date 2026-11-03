@@ -1,6 +1,6 @@
 // Package extract implements safe archive extraction with live progress.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 package extract
 
 import (

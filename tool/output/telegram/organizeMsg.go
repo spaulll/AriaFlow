@@ -1,12 +1,12 @@
 package telegram
 
 import (
-	"DownloadBot/internal/config"
-	"DownloadBot/internal/organize"
-	"DownloadBot/tool/input"
-	"DownloadBot/tool/input/aria2/rpc"
-	"DownloadBot/tool/typeTrans"
-	logger "DownloadBot/tool/zap"
+	"ariaflow/internal/config"
+	"ariaflow/internal/organize"
+	"ariaflow/tool/input"
+	"ariaflow/tool/input/aria2/rpc"
+	"ariaflow/tool/typeTrans"
+	logger "ariaflow/tool/zap"
 	"bytes"
 	"fmt"
 	"io"

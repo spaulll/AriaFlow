@@ -1,10 +1,10 @@
 package input
 
 import (
-	i18nLoc "DownloadBot/i18n"
-	"DownloadBot/internal/config"
-	"DownloadBot/tool/input/aria2"
-	logger "DownloadBot/tool/zap"
+	i18nLoc "ariaflow/i18n"
+	"ariaflow/internal/config"
+	"ariaflow/tool/input/aria2"
+	logger "ariaflow/tool/zap"
 )
 
 type Tool struct {

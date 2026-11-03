@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	i18nLoc "DownloadBot/i18n"
-	logger "DownloadBot/tool/zap"
+	i18nLoc "ariaflow/i18n"
+	logger "ariaflow/tool/zap"
 )
 
 func init() {

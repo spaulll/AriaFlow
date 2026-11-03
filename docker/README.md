@@ -1,4 +1,4 @@
-# Docker Compose deployment for prox-download-bot
+# Docker Compose deployment for ariaflow
 
 Run the whole stack — the bot, `aria2c`, and (optionally) a self-hosted
 Telegram Bot API server — with Docker Compose.
@@ -73,7 +73,7 @@ config/reference is documented in the project's `README.md`; the env mapping is:
 
 ### Storage
 
-All services share one volume (`prox-download-bot-media`) mounted at `/data`:
+All services share one volume (`ariaflow-media`) mounted at `/data`:
 
 - aria2 downloads into `/data/downloads`
 - the bot organizes into `/data/movies`, `/data/series`, … (from `LIBRARY_ROOT`)

@@ -1,6 +1,6 @@
 // Package ytdlp integrates yt-dlp for all supported video sites.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 package ytdlp
 
 import (
@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"DownloadBot/internal/organize"
+	"ariaflow/internal/organize"
 )
 
 // Config holds yt-dlp settings.

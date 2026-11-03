@@ -1,7 +1,7 @@
 package config
 
 import (
-	"DownloadBot/model"
+	"ariaflow/model"
 	"encoding/json"
 	"log"
 	"os"

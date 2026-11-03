@@ -1,4 +1,4 @@
-# aria2 download daemon for prox-download-bot.
+# aria2 download daemon for AriaFlow.
 FROM debian:bookworm-slim
 
 RUN apt-get update \

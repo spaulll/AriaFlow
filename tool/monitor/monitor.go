@@ -1,7 +1,7 @@
 package monitor
 
 import (
-	"DownloadBot/internal/config"
+	"ariaflow/internal/config"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"

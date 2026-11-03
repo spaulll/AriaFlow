@@ -1,7 +1,7 @@
 // Package organize implements post-download media organization with
 // directory-structure parity to AriaFlow's organize_download.sh.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 // Derived from DownloadBot by gaowanliang (Apache-2.0).
 package organize
 

@@ -1,6 +1,6 @@
 // Package users implements multi-user management with admin approval.
 //
-// Copyright 2026 spaulll - prox-download-bot (Apache-2.0)
+// Copyright 2026 spaulll - AriaFlow (Apache-2.0)
 package users
 
 import (

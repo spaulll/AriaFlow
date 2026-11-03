@@ -1,10 +1,10 @@
 package telegram
 
 import (
-	i18nLoc "DownloadBot/i18n"
-	"DownloadBot/internal/config"
-	"DownloadBot/tool/typeTrans"
-	logger "DownloadBot/tool/zap"
+	i18nLoc "ariaflow/i18n"
+	"ariaflow/internal/config"
+	"ariaflow/tool/typeTrans"
+	logger "ariaflow/tool/zap"
 	"fmt"
 	"net/http"
 	"strconv"
