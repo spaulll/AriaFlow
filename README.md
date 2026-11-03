@@ -1,7 +1,7 @@
 # AriaFlow
 
 English-only Telegram bot that drives **aria2** and **yt-dlp**, organizes
-finished downloads into a media library (AriaFlow-style), and supports
+finished downloads into a media library, and supports
 **multi-user access with admin approval**.
 
 Send the bot an HTTP/FTP link, a magnet/torrent, a video-page URL (YouTube,
@@ -19,7 +19,9 @@ it downloads with live progress, then files everything neatly by type.
 1. [Features](#features)
 2. [How it works](#how-it-works)
 3. [Requirements](#requirements)
-4. [Quick start (prebuilt)](#quick-start-prebuilt)
+4. [Quick start](#quick-start)
+   - [Docker Compose (recommended)](#docker-compose-recommended)
+   - [Prebuilt binary](#prebuilt-binary)
 5. [Full setup, step by step](#full-setup-step-by-step)
    - [1. Install runtime tools](#1-install-runtime-tools)
    - [2. Start aria2 with RPC](#2-start-aria2-with-rpc)
@@ -119,52 +121,15 @@ Supported platforms: **Linux `amd64` and `arm64`** (prebuilt binaries and CI).
 
 ---
 
-## Quick start (prebuilt)
+## Quick start
 
 > **Recommended:** deploy with **Docker Compose** — a full stack
 > (`docker-compose.yml` in the repo) runs the bot, `aria2c`, and the optional
 > local Bot API server in containers, sharing one media volume. It needs no
 > manual binary or dependency installation and is the simplest, most
-> reproducible way to run this in production. See
-> [Recommended: Docker Compose](#recommended-docker-compose).
+> reproducible way to run AriaFlow in production.
 
-1. Grab the binary for your arch from the
-   [**Releases**](https://github.com/spaulll/AriaFlow/releases):
-
-   | File | Platform |
-   |------|----------|
-   | `ariaflow-linux-amd64` | Linux x86-64 (most VPS/NAS) |
-   | `ariaflow-linux-arm64` | Linux ARM 64-bit (Raspberry Pi 4/5 64-bit OS, ARM VPS) |
-
-2. Install the runtime dependencies (the binary shells out to these —
-   it fails without them):
-
-    ```bash
-    sudo apt update
-    sudo apt install -y aria2 ffmpeg unzip p7zip-full
-    sudo apt install -y unrar || true   # non-free/multiverse; skip if unavailable
-    # yt-dlp (standalone release; the apt package is outdated):
-    # amd64:
-    sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux \
-      -o /usr/local/bin/yt-dlp
-    # arm64 (instead of the above):
-    # sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64 \
-    #   -o /usr/local/bin/yt-dlp
-    sudo chmod +x /usr/local/bin/yt-dlp
-    ```
-
-3. Start aria2 and write `config.json` — follow
-   [Full setup](#full-setup-step-by-step) steps 2–6.
-4. Run:
-
-   ```bash
-   chmod +x ariaflow-linux-amd64
-   ./ariaflow-linux-amd64 -c ./config.json
-   ```
-
-The binary embeds its English translations — no sidecar files required.
-
-### Quick start with Docker (Compose)
+### Docker Compose (recommended)
 
 A Docker Compose stack ships with the repo (`docker-compose.yml` + `docker/`).
 It runs the bot, an `aria2c` daemon, and (optionally) the local Bot API server
@@ -183,7 +148,45 @@ Extensive guidance (all variables, storage layout, troubleshooting) is in
 generated from environment variables at container start, so no config editing
 is needed.
 
----
+### Prebuilt binary
+
+Prefer a standalone binary (no Docker)? Grab the release for your arch:
+
+1. Download the binary for your arch from the
+   [**Releases**](https://github.com/spaulll/AriaFlow/releases):
+
+   | File | Platform |
+   |------|----------|
+   | `ariaflow-linux-amd64` | Linux x86-64 (most VPS/NAS) |
+   | `ariaflow-linux-arm64` | Linux ARM 64-bit (Raspberry Pi 4/5 64-bit OS, ARM VPS) |
+
+2. Install the runtime dependencies (the binary shells out to these —
+   it fails without them):
+
+   ```bash
+   sudo apt update
+   sudo apt install -y aria2 ffmpeg unzip p7zip-full
+   sudo apt install -y unrar || true   # non-free/multiverse; skip if unavailable
+   # yt-dlp (standalone release; the apt package is outdated):
+   # amd64:
+   sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux \
+     -o /usr/local/bin/yt-dlp
+   # arm64 (instead of the above):
+   # sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux_aarch64 \
+   #   -o /usr/local/bin/yt-dlp
+   sudo chmod +x /usr/local/bin/yt-dlp
+   ```
+
+3. Start aria2 and write `config.json` — follow
+   [Full setup](#full-setup-step-by-step) steps 2–6.
+4. Run:
+
+   ```bash
+   chmod +x ariaflow-linux-amd64
+   ./ariaflow-linux-amd64 -c ./config.json
+   ```
+
+The binary embeds its English translations — no sidecar files required.
 
 ## Full setup, step by step
 
@@ -744,6 +747,8 @@ journalctl -u aria2c   -n 50 --no-pager
 
 - **Original project:** [DownloadBot](https://github.com/gaowanliang/DownloadBot)
   by [gaowanliang (Gaowan Liang)](https://github.com/gaowanliang) — Apache-2.0.
+- AriaFlow is the Go evolution of an earlier shell-script media organizer
+  ([`spaulll/AriaFlow-script`](https://github.com/spaulll/AriaFlow-script)).
 - This repository is a heavily reworked derivative: English-only UI, native Go
   media organization, archive extraction, yt-dlp support, multi-user
   management, Telegram-file forwarding and a self-hosted Bot API integration.
