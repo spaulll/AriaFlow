@@ -121,6 +121,13 @@ Supported platforms: **Linux `amd64` and `arm64`** (prebuilt binaries and CI).
 
 ## Quick start (prebuilt)
 
+> **Recommended:** deploy with **Docker Compose** — a full stack
+> (`docker-compose.yml` in the repo) runs the bot, `aria2c`, and the optional
+> local Bot API server in containers, sharing one media volume. It needs no
+> manual binary or dependency installation and is the simplest, most
+> reproducible way to run this in production. See
+> [Recommended: Docker Compose](#recommended-docker-compose).
+
 1. Grab the binary for your arch from the
    [**Releases**](https://github.com/spaulll/prox-download-bot/releases):
 
@@ -156,6 +163,25 @@ Supported platforms: **Linux `amd64` and `arm64`** (prebuilt binaries and CI).
    ```
 
 The binary embeds its English translations — no sidecar files required.
+
+### Quick start with Docker (Compose)
+
+A Docker Compose stack ships with the repo (`docker-compose.yml` + `docker/`).
+It runs the bot, an `aria2c` daemon, and (optionally) the local Bot API server
+as containers sharing one media volume — no manual binary/tool installation.
+
+```bash
+cp .env.example .env
+# edit .env: set ARIA2_SECRET, BOT_TOKEN, ADMIN_ID (required)
+docker compose up -d --build
+# with the local Bot API server (forwarded files up to 2 GB):
+docker compose --profile api-server up -d --build
+```
+
+Extensive guidance (all variables, storage layout, troubleshooting) is in
+[`docker/README.md`](docker/README.md). The bot reads `config.json`, which is
+generated from environment variables at container start, so no config editing
+is needed.
 
 ---
 
