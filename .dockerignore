@@ -1,0 +1,30 @@
+# Docker
+.dockerignore
+docker-compose.yml
+.env*
+
+# Git / CI
+.git
+.github
+.vscode
+
+# Build artifacts / local junk
+dist
+*.tar
+*.zip
+*.log
+tmp
+
+# Project docs / non-code (not needed inside images)
+CHANGELOG.md
+LICENSE
+NOTICE
+plan.md
+README.md
+
+# Secrets / runtime state (never ship)
+config.json
+users.json
+tasks.json
+*.key
+*.pem

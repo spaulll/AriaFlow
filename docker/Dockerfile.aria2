@@ -1,0 +1,13 @@
+# aria2 download daemon for prox-download-bot.
+FROM debian:bookworm-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends aria2 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY docker/entrypoint-aria2.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 6800
+
+ENTRYPOINT ["/entrypoint.sh"]

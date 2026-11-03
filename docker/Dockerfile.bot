@@ -1,0 +1,42 @@
+# prox-download-bot — bot image.
+# Builds the DownloadBot binary, then wraps it in a runtime image with the
+# tools it shells out to (yt-dlp, ffmpeg, archive extractors).
+
+# syntax=docker/dockerfile:1
+FROM golang:1.24 AS build
+WORKDIR /src
+
+# Vendored deps -> no network needed during build.
+COPY go.mod go.sum ./
+COPY vendor ./vendor
+COPY cmd ./cmd
+COPY internal ./internal
+COPY i18n ./i18n
+COPY model ./model
+COPY tool ./tool
+
+RUN CGO_ENABLED=0 go build -mod=vendor -trimpath -ldflags "-s -w" \
+      -o /out/DownloadBot ./cmd/DownloadBot
+
+FROM debian:bookworm-slim AS runtime
+
+ARG TARGETARCH
+
+# Runtime tools the bot shells out to.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+         ca-certificates curl ffmpeg unzip p7zip-full python3 \
+    && (apt-get install -y --no-install-recommends unrar || true) \
+    && rm -rf /var/lib/apt/lists/* \
+    && ASSET="yt-dlp_linux" \
+    && [ "$TARGETARCH" = "arm64" ] && ASSET="yt-dlp_linux_aarch64"; \
+    curl -fSL "https://github.com/yt-dlp/yt-dlp/releases/latest/download/$ASSET" \
+      -o /usr/local/bin/yt-dlp \
+    && chmod +x /usr/local/bin/yt-dlp
+
+COPY --from=build /out/DownloadBot /app/DownloadBot
+COPY docker/entrypoint.sh docker/render_config.py /app/
+RUN chmod +x /app/entrypoint.sh
+
+WORKDIR /app
+ENTRYPOINT ["/app/entrypoint.sh"]

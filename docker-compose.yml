@@ -1,0 +1,112 @@
+# docker-compose for prox-download-bot.
+#
+# Services:
+#   aria2        – the downloader daemon (RPC on 6800)
+#   bot          – the Telegram bot (drives aria2 + yt-dlp)
+#   tg-bot-api   – OPTIONAL local Bot API server (profile "api-server").
+#                  Only needed for forwarded files > 20 MB (up to 2 GB).
+#
+# Required env (see .env.example):
+#   ARIA2_SECRET
+#   BOT_TOKEN
+#   ADMIN_ID
+# Optional env (only if using the local API server):
+#   API_ID, API_HASH, API_BASE, API_DIR
+
+name: prox-download-bot
+
+services:
+  # ------------------------------------------------------------ downloader ---
+  aria2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.aria2
+    image: prox-download-bot/aria2:latest
+    restart: unless-stopped
+    environment:
+      ARIA2_SECRET: ${ARIA2_SECRET:?ARIA2_SECRET is required}
+      DOWNLOAD_DIR: ${DOWNLOAD_DIR:-/data/downloads}
+    volumes:
+      - media:/data
+    ports:
+      # Optional: expose RPC to the host. Only needed if you want external
+      # aria2 clients. The bot reaches it over the internal network.
+      - "${ARIA2_RPC_PORT:-6800}:6800"
+    healthcheck:
+      test: >-
+        curl -fsS -m 5 -X POST http://127.0.0.1:6800/jsonrpc
+        -H 'Content-Type: application/json'
+        -d '{"jsonrpc":"2.0","id":"1","method":"aria2.getVersion","params":["token:${ARIA2_SECRET}"]}'
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # --------------------------------------------------------------- the bot ---
+  bot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.bot
+    image: prox-download-bot/bot:latest
+    restart: unless-stopped
+    depends_on:
+      aria2:
+        condition: service_healthy
+    environment:
+      ARIA2_SERVER: ws://aria2:6800/jsonrpc
+      ARIA2_KEY: ${ARIA2_SECRET:?ARIA2_SECRET is required}
+      BOT_TOKEN: ${BOT_TOKEN:?BOT_TOKEN is required}
+      ADMIN_ID: ${ADMIN_ID:?ADMIN_ID is required}
+      DOWNLOAD_FOLDER: ${DOWNLOAD_DIR:-/data/downloads}
+      LIBRARY_ROOT: ${LIBRARY_ROOT:-/data}
+      MAX_INDEX: ${MAX_INDEX:-10}
+      LANGUAGE: ${LANGUAGE:-en}
+      ORGANIZE_ENABLED: ${ORGANIZE_ENABLED:-true}
+      ANILIST: ${ANILIST:-true}
+      DELETE_ARCHIVE: ${DELETE_ARCHIVE:-false}
+      KEEP_TORRENT: ${KEEP_TORRENT:-true}
+      YTDLP_PATH: ${YTDLP_PATH:-yt-dlp}
+      YTDLP_QUALITY: ${YTDLP_QUALITY:-bestvideo[height<=1080]+bestaudio/best[height<=1080]/best}
+      YTDLP_EMBED: ${YTDLP_EMBED:-true}
+      YTDLP_COOKIES: ${YTDLP_COOKIES:-}
+      YTDLP_PROXY: ${YTDLP_PROXY:-}
+      API_ID: ${API_ID:-0}
+      API_HASH: ${API_HASH:-}
+      API_BASE: ${API_BASE:-http://tg-bot-api:8081}
+      API_DIR: ${API_DIR:-/data/.tg-bot-api}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - media:/data
+
+  # -------------------------------------------- optional local Bot API server ---
+  tg-bot-api:
+    # Only built/started when enabled:  docker compose --profile api-server up
+    profiles: ["api-server"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.tg-bot-api
+    image: prox-download-bot/tg-bot-api:latest
+    restart: unless-stopped
+    environment:
+      # Validated at runtime in the entrypoint, not at compose parse time
+      # (this service is optional/profile-gated).
+      TG_API_ID: ${API_ID:-}
+      TG_API_HASH: ${API_HASH:-}
+      TG_API_DIR: ${API_DIR:-/data/.tg-bot-api}
+      TG_API_PORT: "8081"
+    volumes:
+      - media:/data
+
+volumes:
+  # Shared storage for downloads + media library + the server's temp store.
+  # All services mount it at /data so aria2's --dir, the bot's downloadFolder,
+  # and the API server's --dir all live on the same filesystem (enables
+  # hardlinks for forwarded files). Swap for a bind mount to your NAS if you
+  # prefer, e.g.:
+  #   media:
+  #     driver: local
+  #     driver_opts:
+  #       type: none
+  #       o: bind
+  #       device: /mnt/nas
+  media:
+    name: prox-download-bot-media
