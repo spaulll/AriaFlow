@@ -23,10 +23,13 @@ FROM debian:bookworm-slim AS runtime
 ARG TARGETARCH
 
 # Runtime tools the bot shells out to.
-RUN apt-get update \
+RUN if grep -q '^Components:' /etc/apt/sources.list.d/debian.sources 2>/dev/null; then \
+      sed -i 's/^Components:.*/Components: main contrib non-free/' /etc/apt/sources.list.d/debian.sources; \
+    fi \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
          ca-certificates curl ffmpeg unzip p7zip-full python3 \
-    && (apt-get install -y --no-install-recommends unrar || true) \
+    && apt-get install -y --no-install-recommends unrar \
     && rm -rf /var/lib/apt/lists/* \
     && ASSET="yt-dlp_linux" \
     && [ "$TARGETARCH" = "arm64" ] && ASSET="yt-dlp_linux_aarch64"; \
