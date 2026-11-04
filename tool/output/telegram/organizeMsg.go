@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"ariaflow/internal/config"
+	"ariaflow/internal/libraryrefresh"
 	"ariaflow/internal/organize"
 	"ariaflow/tool/input"
 	"ariaflow/tool/input/aria2/rpc"
@@ -413,9 +414,38 @@ func sendDualOrganizeSummary(bot *tgBotApi.BotAPI, chats []int64, sourceName str
 		typeTrans.Byte2Readable(float64(res.SizeBytes)),
 		formatDuration(res.Duration),
 	)
+	if note := libraryRefreshNote(res); note != "" {
+		text += "\n\n" + note
+	}
 	for _, chat := range dedupChats(chats) {
 		sendPlain(bot, chat, text)
 	}
+}
+
+// libraryRefreshNote runs the optional Jellyfin/Plex library refresh after a
+// successful organize and returns a short status line to append to the final
+// summary. It returns "" when refresh is disabled or nothing moved into a
+// media-library category (movies/series/anime/music).
+func libraryRefreshNote(res *organize.Result) string {
+	if res == nil || len(res.Moved) == 0 {
+		return ""
+	}
+	cfg := config.GetOrganizeConfig()
+	rcfg := libraryrefresh.Config{
+		JellyfinEnabled: cfg.RefreshJellyfin,
+		JellyfinURL:     cfg.JellyfinURL,
+		JellyfinAPIKey:  cfg.JellyfinAPIKey,
+		PlexEnabled:     cfg.RefreshPlex,
+		PlexURL:         cfg.PlexURL,
+		PlexToken:       cfg.PlexToken,
+	}
+	if !rcfg.Enabled() {
+		return ""
+	}
+	if !libraryrefresh.ShouldRefresh(res.Moved, libraryrefresh.LibraryRoots(libraryRoots())) {
+		return ""
+	}
+	return libraryrefresh.Refresh(rcfg).String()
 }
 
 // handleDownloadComplete is invoked by the notifier on download completion.

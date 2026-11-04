@@ -271,6 +271,9 @@ func sendDualArchiveSummary(bot *tgBotApi.BotAPI, chats []int64, archiveName str
 		typeTrans.Byte2Readable(float64(res.SizeBytes)),
 		formatDuration(res.Duration),
 	)
+	if note := libraryRefreshNote(res); note != "" {
+		text += "\n\n" + note
+	}
 	for _, chat := range dedupChats(chats) {
 		sendPlain(bot, chat, text)
 	}

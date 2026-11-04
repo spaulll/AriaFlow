@@ -72,6 +72,12 @@ cfg = {
         "ytdlpCookies": s("YTDLP_COOKIES"),
         "ytdlpProxy": s("YTDLP_PROXY"),
         "ytdlpEmbed": b("YTDLP_EMBED", True),
+        "refreshJellyfin": b("REFRESH_JELLYFIN"),
+        "jellyfinUrl": s("JELLYFIN_URL"),
+        "jellyfinApiKey": s("JELLYFIN_API_KEY"),
+        "refreshPlex": b("REFRESH_PLEX"),
+        "plexUrl": s("PLEX_URL"),
+        "plexToken": s("PLEX_TOKEN"),
     },
     "log": {
         "logPath": s("LOG_PATH"),

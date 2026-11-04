@@ -34,7 +34,14 @@
     "youtube": "/media/YouTube",
     "services": "/media/Services",
     "ytdlpPath": "yt-dlp",
-    "ytdlpQuality": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best"
+    "ytdlpQuality": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+    "ytdlpEmbed": true,
+    "refreshJellyfin": false,
+    "jellyfinUrl": "",
+    "jellyfinApiKey": "",
+    "refreshPlex": false,
+    "plexUrl": "",
+    "plexToken": ""
   },
   "log": {
     "logPath": "",

@@ -29,6 +29,12 @@ KEEP_TORRENT="${KEEP_TORRENT:-true}"
 YTDLP_PATH="${YTDLP_PATH:-yt-dlp}"
 YTDLP_QUALITY="${YTDLP_QUALITY:-bestvideo[height<=1080]+bestaudio/best[height<=1080]/best}"
 YTDLP_EMBED="${YTDLP_EMBED:-true}"
+REFRESH_JELLYFIN="${REFRESH_JELLYFIN:-false}"
+JELLYFIN_URL="${JELLYFIN_URL:-}"
+JELLYFIN_API_KEY="${JELLYFIN_API_KEY:-}"
+REFRESH_PLEX="${REFRESH_PLEX:-false}"
+PLEX_URL="${PLEX_URL:-}"
+PLEX_TOKEN="${PLEX_TOKEN:-}"
 WITH_API_SERVER="${WITH_API_SERVER:-ask}"
 API_ID="${API_ID:-}"
 API_HASH="${API_HASH:-}"
@@ -81,6 +87,8 @@ Environment variables (non-interactive, same names as flags minus dashes):
   BOT_TOKEN ADMIN_ID ARIA2_SECRET INSTALL_DIR DOWNLOAD_FOLDER LIBRARY_ROOT
   MAX_INDEX LANGUAGE ORGANIZE_ENABLED ANILIST DELETE_ARCHIVE KEEP_TORRENT
   YTDLP_PATH YTDLP_QUALITY YTDLP_EMBED
+  REFRESH_JELLYFIN JELLYFIN_URL JELLYFIN_API_KEY
+  REFRESH_PLEX PLEX_URL PLEX_TOKEN
   WITH_API_SERVER API_ID API_HASH API_BASE API_DIR
   LOG_LEVEL LOG_PATH ERR_PATH
 
@@ -380,6 +388,8 @@ write_config() {
          CFG_MAX="$MAX_INDEX" CFG_LANG="$LANGUAGE" CFG_LOGLEVEL="$LOG_LEVEL" CFG_LOGPATH="$LOG_PATH" CFG_ERRPATH="$ERR_PATH" \
          CFG_ORG="$ORGANIZE_ENABLED" CFG_ANILIST="$ANILIST" CFG_DELARC="$DELETE_ARCHIVE" CFG_KEEP="$KEEP_TORRENT" \
          CFG_YTDLP="$YTDLP_PATH" CFG_YTQ="$YTDLP_QUALITY" CFG_YTEMBED="$YTDLP_EMBED" \
+         CFG_JF_EN="$REFRESH_JELLYFIN" CFG_JF_URL="$JELLYFIN_URL" CFG_JF_KEY="$JELLYFIN_API_KEY" \
+         CFG_PLEX_EN="$REFRESH_PLEX" CFG_PLEX_URL="$PLEX_URL" CFG_PLEX_TOKEN="$PLEX_TOKEN" \
          CFG_APIID="$API_ID" CFG_APIHASH="$API_HASH" CFG_APIBASE="$API_BASE" CFG_APIDIR="$API_DIR" \
          CFG_SERVER="ws://127.0.0.1:6800/jsonrpc" CFG_OUT="$path"
   python3 - <<'PY'
@@ -416,7 +426,13 @@ cfg = {
     "services": os.path.join(s("CFG_LIB"), "Services"),
     "ytdlpPath": s("CFG_YTDLP"),
     "ytdlpQuality": s("CFG_YTQ"),
-    "ytdlpEmbed": b("CFG_YTEMBED", True)
+    "ytdlpEmbed": b("CFG_YTEMBED", True),
+    "refreshJellyfin": b("CFG_JF_EN"),
+    "jellyfinUrl": s("CFG_JF_URL"),
+    "jellyfinApiKey": s("CFG_JF_KEY"),
+    "refreshPlex": b("CFG_PLEX_EN"),
+    "plexUrl": s("CFG_PLEX_URL"),
+    "plexToken": s("CFG_PLEX_TOKEN")
   },
   "log": {"logPath": s("CFG_LOGPATH"), "errPath": s("CFG_ERRPATH"), "level": s("CFG_LOGLEVEL", "info")}
 }

@@ -69,6 +69,8 @@ config/reference is documented in the project's `README.md`; the env mapping is:
 | `LIBRARY_ROOT` | base for all `organize.*` paths |
 | `ORGANIZE_ENABLED` / `ANILIST` / `DELETE_ARCHIVE` / `KEEP_TORRENT` | `organize.*` |
 | `YTDLP_*` | `organize.ytdlp*` |
+| `REFRESH_JELLYFIN` / `JELLYFIN_URL` / `JELLYFIN_API_KEY` | `organize.refreshJellyfin` / `jellyfinUrl` / `jellyfinApiKey` |
+| `REFRESH_PLEX` / `PLEX_URL` / `PLEX_TOKEN` | `organize.refreshPlex` / `plexUrl` / `plexToken` |
 | `LOG_LEVEL` / `LOG_PATH` / `ERR_PATH` | `log.*` |
 
 ### Storage
