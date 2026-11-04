@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.8.0 - 2026-11-04
+
+### Added
+- **Jellyfin/Plex library refresh** — after organizing a download into a
+  media-library category (`movies`/`series`/`anime`/`music`), the bot can now
+  optionally trigger an on-demand rescan on Jellyfin and/or Plex so the new
+  content appears immediately instead of waiting for the periodic scan. Both
+  targets run concurrently with a short timeout; the outcome (success or
+  failure) is shown on the final "All done!" summary. Configure via
+  `organize.refreshJellyfin`/`jellyfinUrl`/`jellyfinApiKey` and
+  `organize.refreshPlex`/`plexUrl`/`plexToken` (env: `REFRESH_JELLYFIN`,
+  `JELLYFIN_*`, `REFRESH_PLEX`, `PLEX_*`).
+
 ## v0.7.0 - 2026-11-03
 
 ### Added

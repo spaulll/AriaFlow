@@ -46,13 +46,14 @@ it downloads with live progress, then files everything neatly by type.
 6. [Configuration reference](#configuration-reference)
 7. [Media library layout](#media-library-layout)
 8. [yt-dlp layout](#yt-dlp-layout)
-9. [Message style](#message-style)
-10. [Multi-user model](#multi-user-model)
-11. [Telegram file forwarding & the 20 MB limit](#telegram-file-forwarding--the-20-mb-limit)
-12. [Building from source](#building-from-source)
-13. [Updating](#updating)
-14. [Troubleshooting](#troubleshooting)
-15. [Security notes](#security-notes)
+9. [Use as a Jellyfin/Plex downloader](#use-as-a-jellyfinplex-downloader)
+10. [Message style](#message-style)
+11. [Multi-user model](#multi-user-model)
+12. [Telegram file forwarding & the 20 MB limit](#telegram-file-forwarding--the-20-mb-limit)
+13. [Building from source](#building-from-source)
+14. [Updating](#updating)
+15. [Troubleshooting](#troubleshooting)
+16. [Security notes](#security-notes)
 16. [Credits & license](#credits--license)
 
 ---
@@ -522,6 +523,12 @@ Login to authorized account YourBot
 | `organize.ytdlpCookies` | cookies.txt path for yt-dlp |
 | `organize.ytdlpProxy` | proxy URL for yt-dlp |
 | `organize.ytdlpEmbed` | embed metadata + thumbnail (needs ffmpeg) |
+| `organize.refreshJellyfin` | trigger a Jellyfin library scan after organizing (default `false`) |
+| `organize.jellyfinUrl` | Jellyfin server base URL, e.g. `http://jellyfin:8096` |
+| `organize.jellyfinApiKey` | Jellyfin API key (`X-Emby-Token`) |
+| `organize.refreshPlex` | trigger a Plex library scan after organizing (default `false`) |
+| `organize.plexUrl` | Plex server base URL, e.g. `http://plex:32400` |
+| `organize.plexToken` | Plex token (`X-Plex-Token`) |
 | `log.logPath` / `log.errPath` | log files (empty = stdout only) |
 | `log.level` | `debug` \| `info` \| `warn` \| `error` |
 
@@ -563,6 +570,55 @@ Services
     └── Uploader
         └── video.mp4
 ```
+
+---
+
+## Use as a Jellyfin/Plex downloader
+
+The bot is a natural front-end for a self-hosted media server. Because every
+finished download lands in a clean, named library folder, you can point
+**Jellyfin** or **Plex** at the organize directories and the downloads show up
+as library items — the classic *arr-style workflow, but driven from Telegram.
+
+**Point your libraries at the organize `:**
+
+| Bot folder | Jellyfin/Plex library type |
+|------------|----------------------------|
+| `movies` | Movies |
+| `series` | TV Shows |
+| `anime` | TV Shows (separate library if you prefer) |
+| `music` | Music |
+
+Add each as a library in the media server, then any download the bot organizes
+appears there (after the server's next periodic scan).
+
+**Instant refresh (optional).** To skip the wait for the periodic scan, the bot
+can trigger a library rescan right after it moves files. Enable it per server in
+`config.json` (or the matching env vars in Docker):
+
+```json
+"organize": {
+  ...
+  "refreshJellyfin": true,
+  "jellyfinUrl": "http://jellyfin:8096",
+  "jellyfinApiKey": "YOUR_API_KEY",
+  "refreshPlex": true,
+  "plexUrl": "http://plex:32400",
+  "plexToken": "YOUR_PLEX_TOKEN"
+}
+```
+
+- **Jellyfin** uses your API key (`X-Emby-Token`) and posts to
+  `/Library/Refresh`.
+- **Plex** uses your Plex token and hits `/library/sections/all/refresh`.
+- A refresh runs **only** when something moved into a media-library category
+  (`movies`/`series`/`anime`/`music`); YouTube/Services downloads, documents,
+  archives and others are skipped.
+- The result is shown as a short line on the final "All done!" summary, e.g.
+  `🔄 Jellyfin + Plex refreshed`. Refresh failures are reported, never fatal.
+
+> The bot never talks to the media server's web UI — it only calls the scan
+> endpoints, so no extra configuration is needed beyond the backend key/token.
 
 ---
 

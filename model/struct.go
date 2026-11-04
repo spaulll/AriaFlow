@@ -77,4 +77,12 @@ type OrganizeConfig struct {
 	YtdlpProxy string `json:"ytdlpProxy"`
 	// YtdlpEmbed embeds metadata + thumbnail (needs ffmpeg)
 	YtdlpEmbed bool `json:"ytdlpEmbed"`
+	// RefreshJellyfin triggers a Jellyfin library scan after organizing.
+	RefreshJellyfin bool   `json:"refreshJellyfin"`
+	JellyfinURL     string `json:"jellyfinUrl"`
+	JellyfinAPIKey  string `json:"jellyfinApiKey"`
+	// RefreshPlex triggers a Plex library scan after organizing.
+	RefreshPlex bool   `json:"refreshPlex"`
+	PlexURL     string `json:"plexUrl"`
+	PlexToken   string `json:"plexToken"`
 }
