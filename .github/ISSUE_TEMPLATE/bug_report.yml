@@ -1,0 +1,67 @@
+name: 🐛 Bug report
+description: Report a problem with AriaFlow
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much as you can.
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+      placeholder: The bot crashes when I forward a large file...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+  - type: input
+    id: version
+    attributes:
+      label: AriaFlow version
+      description: Version or commit you are running (e.g. v0.7.0, or the git SHA).
+    validations:
+      required: true
+  - type: dropdown
+    id: deploy
+    attributes:
+      label: Deployment method
+      options:
+        - Docker Compose
+        - Prebuilt binary
+        - Built from source
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform / OS
+      description: e.g. Debian 12 amd64, Ubuntu 24.04 arm64, Raspberry Pi OS.
+      placeholder: Debian 12 amd64
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste relevant `journalctl -u downloadbot -n 50` output or logs. Remove any tokens/secrets.
+      render: shell
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: Paste the **redacted** portions of `config.json` (never paste tokens or secrets).
+      render: json

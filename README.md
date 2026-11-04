@@ -1,5 +1,16 @@
 # AriaFlow
 
+[![Build](https://github.com/spaulll/AriaFlow/actions/workflows/build.yml/badge.svg)](https://github.com/spaulll/AriaFlow/actions/workflows/build.yml)
+[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/spaulll/AriaFlow?sort=semver)](https://github.com/spaulll/AriaFlow/releases)
+[![Platform](https://img.shields.io/badge/platform-linux_amd64_%7C_arm64-informational)](https://github.com/spaulll/AriaFlow/releases)
+
+**A self-hosted Telegram download bot for [aria2](https://aria2.github.io/) and
+[yt-dlp](https://github.com/yt-dlp/yt-dlp).** Send it a link, a magnet/torrent,
+a video-page URL, or just forward a Telegram file — it downloads with live
+progress and organizes everything into a clean media library automatically.
+
 English-only Telegram bot that drives **aria2** and **yt-dlp**, organizes
 finished downloads into a media library, and supports
 **multi-user access with admin approval**.
