@@ -852,4 +852,7 @@ func (Notifier) OnBtDownloadComplete(events []rpc.Event) {
 	} else {
 		logger.Info("BT Download completed")
 	}
+	// with seed-time=0 (or a stopped seed) this is the only completion
+	// signal a torrent fires; without it the organize pipeline never runs
+	handleDownloadComplete(events)
 }

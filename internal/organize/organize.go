@@ -223,7 +223,23 @@ func (o *Organizer) organizeReleaseGroup(dir string, files []string, report Repo
 		primary = Categorize(filepath.Ext(files[0]))
 	}
 	destRoot := o.Paths.dirFor(primary)
-	folder := CleanMovieFolderName(filepath.Base(dir))
+	// Prefer a folder name derived from the primary video file: release
+	// directories often carry site/group prefixes ("www.SomeSite.org -
+	// Title ...") that would otherwise pollute the library folder name.
+	// The pipeline's naming scheme is Movies/Title (Year)/Title (Year).ext.
+	folder := ""
+	if primary == CatMovies {
+		for _, f := range files {
+			if IsVideo(filepath.Base(f)) {
+				if folder = CleanMovieFolderName(filepath.Base(f)); folder != "" {
+					break
+				}
+			}
+		}
+	}
+	if folder == "" {
+		folder = CleanMovieFolderName(filepath.Base(dir))
+	}
 	if destRoot == "" || folder == "" {
 		routeEach()
 		return res, nil

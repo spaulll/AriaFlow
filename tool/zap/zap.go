@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	rotateLogs "github.com/lestrrat-go/file-rotatelogs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -107,12 +108,17 @@ func Error(format string, v ...interface{}) {
 	logger.Sugar().Errorf(format, v...)
 }
 
+// Panic logs at panic level and then panics. The message is rendered with
+// fmt.Sprintf first: zap's sugared logger does not support Go's %w verb,
+// and passing it through (e.g. "%w" + an error) produced a broken
+// "%!w(context.deadlineExceededError={})" line in the log.
 func Panic(format string, v ...interface{}) {
-	logger.Sugar().Panicf(format, v...)
+	msg := fmt.Sprintf(format, v...)
+	logger.Sugar().Panicf("%s", msg)
 }
 
 func DropErr(err error) {
 	if err != nil {
-		Panic("%w", err)
+		Panic("%v", err)
 	}
 }

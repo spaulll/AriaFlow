@@ -7,7 +7,7 @@ import (
 
 func dropErr(err error) {
 	if err != nil {
-		logger.Panic("%w", err)
+		logger.Panic("%v", err)
 	}
 }
 

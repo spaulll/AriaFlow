@@ -2,6 +2,33 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.9.0 - 2026-11-07
+
+### Fixed
+- **Bot no longer crashes on transient aria2 RPC timeouts** — the 5-second
+  live progress poll used to `panic` on any RPC error (e.g. aria2 busy
+  finalising a large file on a slow disk), killing the whole bot. RPC/data
+  errors are now logged and the view degrades gracefully instead.
+- **Crash-recovery now covers all completed downloads, not just archives** —
+  if the bot dies after a download completes but before the organize pipeline
+  moves it, the startup recovery re-runs the media pipeline for every
+  completed aria2 task whose files are still in the download folder (torrent
+  folders included), with a 7-day recency guard so old intentional leftovers
+  are never touched.
+- **BitTorrent completion now triggers the organize pipeline** — previously
+  only `onDownloadComplete` did, so a torrent that finished and stopped
+  seeding (e.g. `seed-time=0`) would silently stay in the download folder.
+- **Deduplicated organize runs** — `onDownloadComplete`/`onBtDownloadComplete`
+  and startup recovery can no longer process the same download twice.
+- **Release-group folder naming follows the media pipeline** — movie release
+  directories with site/group prefixes (`www.Site.org - Title ...`) now land
+  in `Movies/Title (Year)/Title (Year).ext` derived from the video file,
+  instead of polluting the folder name with the prefix.
+- **Log rendering of fatal errors fixed** — `%w` is not supported by zap;
+  panics now log a readable message instead of `%!w(....)`.
+- **Torrent upload failures are non-fatal** — a failed fetch of an uploaded
+  `.torrent` file logs and skips instead of killing the process.
+
 ## v0.8.0 - 2026-11-04
 
 ### Added

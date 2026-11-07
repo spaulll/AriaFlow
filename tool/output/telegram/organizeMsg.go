@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	tgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -448,6 +449,29 @@ func libraryRefreshNote(res *organize.Result) string {
 	return libraryrefresh.Refresh(rcfg).String()
 }
 
+// organizeInflight prevents duplicate organize runs for the same gid.
+// Both OnDownloadComplete and OnBtDownloadComplete can fire for one torrent
+// (and startup recovery can race a delayed notification), so without this a
+// gid could be organized twice.
+var organizeInflight sync.Map // gid string -> struct{}
+
+// claimOrganizeInflight returns true if the gid is not already being
+// organized and atomically marks it in-flight.
+func claimOrganizeInflight(gid string) bool {
+	if gid == "" {
+		return false
+	}
+	_, loaded := organizeInflight.LoadOrStore(gid, struct{}{})
+	return !loaded
+}
+
+// releaseOrganizeInflight clears the in-flight mark for gid.
+func releaseOrganizeInflight(gid string) {
+	if gid != "" {
+		organizeInflight.Delete(gid)
+	}
+}
+
 // handleDownloadComplete is invoked by the notifier on download completion.
 // Resolves the finished download path and starts the organize pipeline.
 func handleDownloadComplete(events []rpc.Event) {
@@ -455,7 +479,12 @@ func handleDownloadComplete(events []rpc.Event) {
 		return
 	}
 	gid := events[0].Gid
+	if !claimOrganizeInflight(gid) {
+		logger.Debug("organize already in flight for %s - skipping duplicate", gid)
+		return
+	}
 	go func() {
+		defer releaseOrganizeInflight(gid)
 		// resolve path with retries: the RPC connection may be busy right
 		// after the completion notification
 		var srcPath, name string

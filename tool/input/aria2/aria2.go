@@ -33,9 +33,13 @@ type Aria2 struct {
 	Notifier rpc2.Notifier
 }
 
+// dropErr logs a non-fatal data/parse error. Transient RPC hiccups (e.g. a
+// busy aria2 timing out while finalising a large file) must never take the
+// whole bot down - the live progress view polls aria2 every 5 seconds, so a
+// single timeout used to panic the process via logger.Panic.
 func dropErr(err error) {
 	if err != nil {
-		logger.Panic("%w", err)
+		logger.Error("aria2: %v", err)
 	}
 }
 
@@ -105,7 +109,10 @@ func disconnectionMonitoring(notifier rpc2.Notifier) {
 				aria2Rpc, err = rpc2.New(context.Background(), config.GetAria2Server(), config.GetAria2Key(), time.Second*30, notifier)
 			}
 			version, err := aria2Rpc.GetVersion()
-			dropErr(err)
+			if err != nil {
+				logger.Error("reconnect GetVersion failed: %v", err)
+				continue
+			}
 			logger.Info(fmt.Sprintf(i18nLoc.LocText("connectSuccess"), version.Version))
 			timeout = 1
 		}
@@ -151,7 +158,12 @@ func formatTellSomething(info []rpc2.StatusInfo, err error) string {
 // formatTellSomethingFiltered formats task info; when allow is non-nil only
 // tasks whose gid is in the set are shown (per-user scoping).
 func formatTellSomethingFiltered(info []rpc2.StatusInfo, err error, allow map[string]bool) string {
-	dropErr(err)
+	if err != nil {
+		// transient RPC failure (aria2 busy/restarting): show nothing
+		// rather than panic the process
+		logger.Error("aria2 tell failed: %v", err)
+		return ""
+	}
 	if allow != nil {
 		filtered := make([]rpc2.StatusInfo, 0, len(info))
 		for _, item := range info {
@@ -184,7 +196,11 @@ func formatTellSomethingFiltered(info []rpc2.StatusInfo, err error, allow map[st
 			dropErr(err)
 			m["Speed"] = typeTrans.Byte2Readable(downloadSpeed)
 			m["Status"] = statusFlag[Files.Status]
-			day, hours, minutes, seconds := resolveTime(int((bytes - completedLength) / downloadSpeed))
+			remaining := int64(0)
+			if downloadSpeed > 0 && bytes > completedLength {
+				remaining = int64((bytes - completedLength) / downloadSpeed)
+			}
+			day, hours, minutes, seconds := resolveTime(int(remaining))
 			m["remainingTime"] = ""
 			//log.Println(hours, minutes, seconds, int((bytes-completedLength)/downloadSpeed))
 			if day > 0 {
@@ -235,7 +251,11 @@ func formatTellSomethingFiltered(info []rpc2.StatusInfo, err error, allow map[st
 				m["Speed"] = typeTrans.Byte2Readable(downloadSpeed)
 				m["Status"] = statusFlag[Files.Status]
 				m["remainingTime"] = ""
-				day, hours, minutes, seconds := resolveTime(int((bytes - completedLength) / downloadSpeed))
+				remaining := int64(0)
+				if downloadSpeed > 0 && bytes > completedLength {
+					remaining = int64((bytes - completedLength) / downloadSpeed)
+				}
+				day, hours, minutes, seconds := resolveTime(int(remaining))
 				//log.Println(hours, minutes, seconds, int((bytes-completedLength)/downloadSpeed))
 				if day > 0 {
 					m["remainingTime"] += fmt.Sprintf(i18nLoc.LocText("onlyDays"), day)
@@ -268,9 +288,11 @@ func formatTellSomethingFiltered(info []rpc2.StatusInfo, err error, allow map[st
 		}
 	}
 	if res != "" {
-		totalSpeed, err := aria2Rpc.GetGlobalStat()
-		dropErr(err)
-		res += fmt.Sprintf(i18nLoc.LocText("systemInfo"), monitor.GetCpuPercent(), monitor.GetDiskPercent(config.GetDownloadFolder()), monitor.GetMemPercent(), typeTrans.Byte2Readable(typeTrans.Str2Float64(totalSpeed.DownloadSpeed)), typeTrans.Byte2Readable(typeTrans.Str2Float64(totalSpeed.UploadSpeed)))
+		if totalSpeed, err := aria2Rpc.GetGlobalStat(); err == nil {
+			res += fmt.Sprintf(i18nLoc.LocText("systemInfo"), monitor.GetCpuPercent(), monitor.GetDiskPercent(config.GetDownloadFolder()), monitor.GetMemPercent(), typeTrans.Byte2Readable(typeTrans.Str2Float64(totalSpeed.DownloadSpeed)), typeTrans.Byte2Readable(typeTrans.Str2Float64(totalSpeed.UploadSpeed)))
+		} else {
+			logger.Error("aria2 global stat failed: %v", err)
+		}
 	}
 	return res
 }
@@ -399,9 +421,13 @@ func (a Aria2) FormatGidAndNameFiltered(method int, allow map[string]bool) []map
 	case 1:
 		info, err = aria2Rpc.TellWaiting(0, config.GetMaxIndex())
 	default:
-		logger.Panic("method error")
+		logger.Error("FormatGidAndNameFiltered: unknown method %d", method)
+		return nil
 	}
-	dropErr(err)
+	if err != nil {
+		logger.Error("aria2 tell failed: %v", err)
+		return nil
+	}
 	if allow != nil {
 		filtered := make([]rpc2.StatusInfo, 0, len(info))
 		for _, item := range info {
@@ -846,8 +872,48 @@ func (a Aria2) UnpauseAll() {
 
 func (a Aria2) GetVersion() string {
 	version, err := aria2Rpc.GetVersion()
-	dropErr(err)
+	if err != nil {
+		logger.Error("GetVersion failed: %v", err)
+		return ""
+	}
 	return version.Version
+}
+
+// ResolveStoppedPath resolves the on-disk path and display name of a
+// download from its (already fetched) aria2 status. For torrents it returns
+// the torrent root directory (multi-file) or the file itself (single-file),
+// plus isTorrent=true so callers can apply torrent-only grouping. Pure
+// function - never contacts aria2, never panics.
+func ResolveStoppedPath(info rpc2.StatusInfo, downloadFolder string) (path string, name string, isTorrent bool) {
+	dl := filepath.Clean(downloadFolder)
+	if info.BitTorrent.Info.Name != "" {
+		// single-file torrent: Files[0].Path is the file itself - return it
+		// directly. Returning the download folder here would make the
+		// organizer walk the entire download root (data loss risk).
+		if len(info.Files) == 1 {
+			if info.Files[0].Path != "" {
+				return filepath.Clean(info.Files[0].Path), info.BitTorrent.Info.Name, true
+			}
+			return dl, info.BitTorrent.Info.Name, true
+		}
+		for _, f := range info.Files {
+			if f.Path != "" {
+				p := filepath.Clean(f.Path)
+				rel, rerr := filepath.Rel(dl, p)
+				if rerr == nil && rel != "." && strings.Contains(rel, string(filepath.Separator)) {
+					return filepath.Join(dl, strings.SplitN(rel, string(filepath.Separator), 2)[0]), info.BitTorrent.Info.Name, true
+				}
+				return dl, info.BitTorrent.Info.Name, true
+			}
+		}
+		return dl, info.BitTorrent.Info.Name, true
+	}
+	for _, f := range info.Files {
+		if f.Path != "" {
+			return filepath.Clean(f.Path), filepath.Base(f.Path), false
+		}
+	}
+	return "", "", false
 }
 
 // DownloadedPath resolves the on-disk path and display name of a completed
@@ -861,33 +927,5 @@ func (a Aria2) DownloadedPath(gid string) (path string, name string, isTorrent b
 		logger.Error("tellStatus failed for %s: %v", gid, err)
 		return "", "", false
 	}
-	if info.BitTorrent.Info.Name != "" {
-		// single-file torrent: Files[0].Path is the file itself - return it
-		// directly. Returning the download folder here would make the
-		// organizer walk the entire download root (data loss risk).
-		if len(info.Files) == 1 {
-			if info.Files[0].Path != "" {
-				return filepath.Clean(info.Files[0].Path), info.BitTorrent.Info.Name, true
-			}
-			return config.GetDownloadFolder(), info.BitTorrent.Info.Name, true
-		}
-		for _, f := range info.Files {
-			if f.Path != "" {
-				p := filepath.Clean(f.Path)
-				dl := filepath.Clean(config.GetDownloadFolder())
-				rel, rerr := filepath.Rel(dl, p)
-				if rerr == nil && rel != "." && strings.Contains(rel, string(filepath.Separator)) {
-					return filepath.Join(dl, strings.SplitN(rel, string(filepath.Separator), 2)[0]), info.BitTorrent.Info.Name, true
-				}
-				return dl, info.BitTorrent.Info.Name, true
-			}
-		}
-		return config.GetDownloadFolder(), info.BitTorrent.Info.Name, true
-	}
-	for _, f := range info.Files {
-		if f.Path != "" {
-			return filepath.Clean(f.Path), filepath.Base(f.Path), false
-		}
-	}
-	return "", "", false
+	return ResolveStoppedPath(info, config.GetDownloadFolder())
 }

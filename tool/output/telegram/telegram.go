@@ -35,7 +35,7 @@ var deleteMes tgBotApi.DeleteMessageConfig = tgBotApi.DeleteMessageConfig{
 // dropErr panics when err is non-nil (used for startup/fatal failures).
 func dropErr(err error) {
 	if err != nil {
-		logger.Panic("%w", err)
+		logger.Panic("%v", err)
 	}
 }
 
@@ -971,30 +971,39 @@ func Aria2Bot(BotKey string, wg *sync.WaitGroup) {
 						if isTorrentUpload(doc.FileName, doc.MimeType) {
 							bt, _ := telegramDirectURL(bot, doc.FileID)
 							resp, err := http.Get(bt)
-							dropErr(err)
-							defer resp.Body.Close()
-							tmpName := fmt.Sprintf("temp_%d_%d.torrent", senderID, time.Now().UnixNano())
-							out, err := os.Create(tmpName)
-							dropErr(err)
-							_, err = io.Copy(out, resp.Body)
-							out.Close()
-							dropErr(err)
-							if gid, ok := input.ToolApp.Aria2.Download(tmpName); ok {
-								taskStore.Add(users.Task{
-									GID:    gid,
-									UserID: senderID,
-									ChatID: update.Message.Chat.ID,
-									Link:   doc.FileName,
-									Name:   doc.FileName,
-									Engine: "aria2",
-									Status: "downloading",
-								})
-								rememberUploadedTorrent(gid, tmpName)
-								_ = os.Remove(tmpName)
-								notifyUserAdded(senderID, senderUsername, doc.FileName)
-								msg.Text = ""
+							if err != nil {
+								// transient network failure must not take the bot down
+								logger.Error("failed to fetch uploaded torrent: %v", err)
 							} else {
-								_ = os.Remove(tmpName)
+								tmpName := fmt.Sprintf("temp_%d_%d.torrent", senderID, time.Now().UnixNano())
+								out, cerr := os.Create(tmpName)
+								if cerr != nil {
+									logger.Error("failed to create temp torrent file: %v", cerr)
+								} else {
+									_, cerr = io.Copy(out, resp.Body)
+									out.Close()
+									if cerr != nil {
+										logger.Error("failed to copy uploaded torrent: %v", cerr)
+										_ = os.Remove(tmpName)
+									} else if gid, ok := input.ToolApp.Aria2.Download(tmpName); ok {
+										taskStore.Add(users.Task{
+											GID:    gid,
+											UserID: senderID,
+											ChatID: update.Message.Chat.ID,
+											Link:   doc.FileName,
+											Name:   doc.FileName,
+											Engine: "aria2",
+											Status: "downloading",
+										})
+										rememberUploadedTorrent(gid, tmpName)
+										_ = os.Remove(tmpName)
+										notifyUserAdded(senderID, senderUsername, doc.FileName)
+										msg.Text = ""
+									} else {
+										_ = os.Remove(tmpName)
+									}
+								}
+								resp.Body.Close()
 							}
 						} else if reply := handleTelegramFile(bot, senderID, update.Message.Chat.ID, senderUsername, doc.FileID, doc.FileName, doc.FileSize); reply != "" {
 							msg.Text = reply

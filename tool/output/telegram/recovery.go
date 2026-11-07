@@ -9,11 +9,14 @@ import (
 	"ariaflow/internal/config"
 	"ariaflow/internal/extract"
 	"ariaflow/tool/input"
+	aria2pkg "ariaflow/tool/input/aria2"
+	"ariaflow/tool/input/aria2/rpc"
 	logger "ariaflow/tool/zap"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // stagePrefix marks extraction staging directories.
@@ -24,13 +27,6 @@ const stagePrefix = ".proxbot_extract_"
 // from a crashed run - the process that created it is gone.
 func recoverCleanupStages() {
 	cleanupStaleStages()
-}
-
-// recoverResumeDownloads runs after aria2 is connected and re-runs the
-// archive pipeline for downloads that completed but were never organized
-// (crash between "download complete" and "moved into the library").
-func recoverResumeDownloads() {
-	resumeUnprocessedArchives()
 }
 
 // cleanupStaleStages removes orphaned staging directories from crashed runs.
@@ -93,53 +89,138 @@ func stageRoots() []string {
 	return roots
 }
 
-// resumeUnprocessedArchives finds archives in the download folder that aria2
-// itself completed but that never got organized (crash right after the
-// download finished), and restarts the archive pipeline for them.
-func resumeUnprocessedArchives() {
-	dl := config.GetDownloadFolder()
-	if dl == "" {
-		return
+// recoverCandidate is one completed-but-unprocessed download discovered at
+// startup: aria2 says it finished, the files are still on disk in the
+// download folder (i.e. the organize pipeline never moved them), and the
+// download is recent enough that it is clearly a missed event rather than a
+// deliberate leftover.
+type recoverCandidate struct {
+	Gid       string
+	SrcPath   string
+	Name      string
+	IsTorrent bool
+}
+
+// recoveryMaxAge bounds how old a completed download may be for recovery to
+// pick it up. Old files sitting in the download folder (e.g. manual test
+// files) are never touched.
+const recoveryMaxAge = 7 * 24 * time.Hour
+
+// selectRecoveryCandidates scans aria2's stopped-task list for completed
+// downloads that were never organized, and returns the ones whose files are
+// still present under the download folder. Pure decision logic (no RPC),
+// so it is unit-testable.
+//
+// Guards:
+//   - task must be completed (status "complete") with real content;
+//   - magnet metadata pseudo-downloads ("[METADATA]...") are skipped;
+//   - stored .torrent files are skipped (they are metadata, not media);
+//   - the path must live under dl (never dl itself) and outside every
+//     configured library root and the torrents dir;
+//   - the file must still exist (gone = already organized);
+//   - it must not have a live .aria2 control file (still downloading);
+//   - it must be recent (mtime within maxAge) so old intentional leftovers
+//     are never moved.
+func selectRecoveryCandidates(tasks []rpc.StatusInfo, dl string, libRoots []string, now time.Time, maxAge time.Duration) []recoverCandidate {
+	dl = filepath.Clean(dl)
+	if dl == "" || dl == "/" || dl == "." {
+		return nil
+	}
+	roots := make([]string, 0, len(libRoots))
+	for _, r := range libRoots {
+		if r := filepath.Clean(r); r != "" && r != dl {
+			roots = append(roots, r)
+		}
+	}
+	underLibrary := func(p string) bool {
+		for _, r := range roots {
+			if rel, err := filepath.Rel(r, p); err == nil && rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+				return true
+			}
+		}
+		return false
 	}
 
-	// only archives aria2 knows it completed - never touch user files
-	completed := map[string]bool{}
-	for _, t := range input.ToolApp.Aria2.StoppedTasks() {
+	var out []recoverCandidate
+	for _, t := range tasks {
 		if t.Status != "complete" {
 			continue
 		}
-		for _, f := range t.Files {
-			p := f.Path
-			if p == "" || filepath.Dir(p) != dl || !extract.IsArchivePath(p) {
-				continue
-			}
-			completed[p] = true
+		if t.TotalLength == "0" && t.CompletedLength == "0" {
+			// placeholder/error leftovers
+			continue
 		}
-	}
-
-	resumed := 0
-	for path := range completed {
+		if strings.HasPrefix(t.BitTorrent.Info.Name, "[METADATA]") {
+			continue
+		}
+		path, name, isTorrent := aria2pkg.ResolveStoppedPath(t, dl)
+		if path == "" {
+			continue
+		}
+		if strings.EqualFold(filepath.Ext(path), ".torrent") {
+			continue
+		}
+		rel, err := filepath.Rel(dl, path)
+		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			continue
+		}
+		if underLibrary(path) {
+			continue
+		}
 		// file gone = already organized in a previous run
-		if _, err := os.Stat(path); err != nil {
+		info, err := os.Stat(path)
+		if err != nil {
 			continue
 		}
 		// .aria2 control file present = still downloading
 		if _, err := os.Stat(path + ".aria2"); err == nil {
 			continue
 		}
-		resumed++
-		name := filepath.Base(path)
-		logger.Info("recovery: resuming unprocessed archive %s", path)
-		go func(src, displayName string) {
-			org := buildOrganizer()
-			runArchivePipelineDual(activeBot, adminChatIDs(), "", org, src, displayName, popRecoveryNoticeDual())
-		}(path, name)
+		// only pick up fresh downloads: old leftovers are intentional
+		if now.Sub(info.ModTime()) > maxAge {
+			continue
+		}
+		out = append(out, recoverCandidate{Gid: t.Gid, SrcPath: path, Name: name, IsTorrent: isTorrent})
 	}
-	if resumed > 0 {
-		msgs := sendToChats(activeBot, adminChatIDs(),
-			fmt.Sprintf("🔄 Recovery\n\nBot restarted mid-organize\n→ Resuming %d archive(s) from the previous run", resumed))
-		trackChatMsgs(msgs)
-		setRecoveryNotice(msgs)
+	return out
+}
+
+// recoverResumeDownloads runs after aria2 is connected. If the bot (or the
+// whole machine) died after a download completed but before the organize
+// pipeline moved it into the library, the file is stranded in the download
+// folder with no notification pending - aria2 does not replay completion
+// events. This re-runs the media pipeline for every such download, so a
+// crash never loses a finished download.
+func recoverResumeDownloads() {
+	dl := config.GetDownloadFolder()
+	if dl == "" {
+		return
+	}
+	libRoots := stageRoots()
+	candidates := selectRecoveryCandidates(input.ToolApp.Aria2.StoppedTasks(), dl, libRoots, time.Now(), recoveryMaxAge)
+	if len(candidates) == 0 {
+		return
+	}
+
+	msgs := sendToChats(activeBot, adminChatIDs(),
+		fmt.Sprintf("🔄 Recovery\n\nBot restarted mid-organize\n→ Resuming %d download(s) from the previous run", len(candidates)))
+	trackChatMsgs(msgs)
+	setRecoveryNotice(msgs)
+
+	org := buildOrganizer()
+	for _, c := range candidates {
+		logger.Info("recovery: resuming unprocessed download %s (%s)", c.Name, c.SrcPath)
+		if !claimOrganizeInflight(c.Gid) {
+			continue
+		}
+		go func(c recoverCandidate) {
+			defer releaseOrganizeInflight(c.Gid)
+			if extract.IsArchivePath(c.SrcPath) {
+				runArchivePipelineDual(activeBot, adminChatIDs(), c.Gid, org, c.SrcPath, c.Name, popRecoveryNoticeDual())
+				return
+			}
+			runOrganizeDual(activeBot, adminChatIDs(), c.Gid, c.SrcPath, c.Name, c.IsTorrent)
+		}(c)
 	}
 }
 
