@@ -74,9 +74,10 @@ func startYtdlpDownload(bot *tgBotApi.BotAPI, ownerChatID int64, rawURL string, 
 		taskGID = gid[0]
 	}
 
-	// announce - same frame as the aria2 task list
+	// announce - same frame as the aria2 task list (blank line before the
+	// system footer, like the aria2 list)
 	live := NewDualProgressMsgMD(bot, chats,
-		renderTaskProgress(taskProgressView{Filename: rawURL, GID: taskGID})+systemInfoFooter())
+		renderTaskProgress(taskProgressView{Filename: rawURL, GID: taskGID})+"\n"+systemInfoFooter())
 	var lastText string
 	var lastUpdate time.Time
 	report := func(p ytdlp.Progress) {
@@ -87,7 +88,8 @@ func startYtdlpDownload(bot *tgBotApi.BotAPI, ownerChatID int64, rawURL string, 
 		var text string
 		switch p.Stage {
 		case "downloading":
-			// identical structure to the aria2 task list
+			// identical structure to the aria2 task list (blank line before
+			// the system footer, like the aria2 list)
 			text = renderTaskProgress(taskProgressView{
 				Filename:   rawURL,
 				Percent:    p.Percent,
@@ -96,7 +98,7 @@ func startYtdlpDownload(bot *tgBotApi.BotAPI, ownerChatID int64, rawURL string, 
 				SpeedBps:   float64(p.SpeedBytes),
 				ETASeconds: float64(p.ETASeconds),
 				GID:        taskGID,
-			}) + systemInfoFooter()
+			}) + "\n" + systemInfoFooter()
 		case "processing":
 			detail := p.Detail
 			if i := strings.Index(detail, "]"); i >= 0 {
@@ -109,7 +111,8 @@ func startYtdlpDownload(bot *tgBotApi.BotAPI, ownerChatID int64, rawURL string, 
 			text = "*Filename:* `" + strings.ReplaceAll(rawURL, "`", "") + "`\n" +
 				"`" + taskProgressBar(100) + "`\n" +
 				"*Status:* `" + strings.ReplaceAll(detail, "`", "") + "`\n" +
-				"*GID:* `" + strings.ReplaceAll(taskGID, "`", "") + "`"
+				"*GID:* `" + strings.ReplaceAll(taskGID, "`", "") + "`\n" +
+				"\n" + systemInfoFooter()
 		case "done":
 			return
 		default:

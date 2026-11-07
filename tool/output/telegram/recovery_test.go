@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"ariaflow/internal/users"
 	"ariaflow/tool/input/aria2/rpc"
 )
 
@@ -161,5 +162,61 @@ func TestSelectRecoveryCandidatesExcludesDlRoot(t *testing.T) {
 	got := selectRecoveryCandidates([]rpc.StatusInfo{task}, dl, libRoots, now, 7*24*time.Hour)
 	if len(got) != 0 {
 		t.Fatalf("download-root task must be excluded, got %+v", got)
+	}
+}
+
+func tgTask(gid, name string, size int64, status string) users.Task {
+	return users.Task{GID: gid, Name: name, Size: size, Engine: "telegram", Status: status}
+}
+
+func TestSelectInterruptedTelegramCandidates(t *testing.T) {
+	now := time.Now()
+	stable := now.Add(-10 * time.Minute)
+	fresh := now.Add(-30 * time.Second)
+
+	temps := map[string]tempFileStat{
+		"Paycheck_2003_720p.mkv": {size: 1000, mtime: stable},
+		"Other_2028.mkv":         {size: 2000, mtime: stable},
+		"Fresh_2029.mkv":         {size: 3000, mtime: fresh},
+		"Partial_2030.mkv":       {size: 1500, mtime: stable},
+		"Mismatch_2031.mkv":      {size: 500, mtime: stable},
+	}
+
+	tasks := []users.Task{
+		tgTask("tg1", "Paycheck_2003_720p.mkv", 1000, "downloading"), // match
+		tgTask("tg2", "Other_2028.mkv", 9999, "downloading"),         // size mismatch
+		tgTask("tg3", "Fresh_2029.mkv", 3000, "downloading"),         // too fresh
+		tgTask("tg4", "Partial_2030.mkv", 1500, "failed"),            // failed+size match -> recovered
+		tgTask("tg5", "Mismatch_2031.mkv", 500, "completed"),         // completed -> skip
+		tgTask("tg6", "Unknown_2032.mkv", 0, "downloading"),          // no size -> skip
+		tgTask("tg7", "Yt_2033.mkv", 4000, "downloading"),            // wrong engine
+	}
+	tasks[6].Engine = "ytdlp"
+
+	got := selectInterruptedTelegramCandidates(tasks, temps, now, 2*time.Minute)
+	want := map[string]bool{"tg1": true, "tg4": true}
+	if len(got) != len(want) {
+		t.Fatalf("got %d candidates %+v, want %d", len(got), got, len(want))
+	}
+	for _, c := range got {
+		if !want[c.Gid] {
+			t.Errorf("unexpected candidate %+v", c)
+		}
+	}
+}
+
+func TestSelectInterruptedTelegramCandidatesNoDoubleAssign(t *testing.T) {
+	now := time.Now()
+	stable := now.Add(-10 * time.Minute)
+	temps := map[string]tempFileStat{
+		"Same_2028.mkv": {size: 1000, mtime: stable},
+	}
+	tasks := []users.Task{
+		tgTask("tg1", "Same_2028.mkv", 1000, "downloading"),
+		tgTask("tg2", "Same_2028.mkv", 1000, "downloading"),
+	}
+	got := selectInterruptedTelegramCandidates(tasks, temps, now, 2*time.Minute)
+	if len(got) != 1 {
+		t.Fatalf("one temp file must be assigned at most once, got %+v", got)
 	}
 }

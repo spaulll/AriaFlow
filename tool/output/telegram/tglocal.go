@@ -224,6 +224,51 @@ func scanTempDir() map[string]tempFileStat {
 	return out
 }
 
+// findTempFilePath resolves the full on-disk path of a server temp file
+// (scanTempDir returns names only). Mirrors scanTempDir's walk.
+func findTempFilePath(root, name string) string {
+	var found string
+	var scan func(dir string)
+	scan = func(dir string) {
+		if found != "" {
+			return
+		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return
+		}
+		for _, e := range entries {
+			if found != "" {
+				return
+			}
+			p := filepath.Join(dir, e.Name())
+			if !e.IsDir() {
+				continue
+			}
+			if e.Name() == "temp" {
+				if _, err := os.Stat(filepath.Join(p, name)); err == nil {
+					found = filepath.Join(p, name)
+					return
+				}
+				sub, err := os.ReadDir(p)
+				if err != nil {
+					continue
+				}
+				for _, sf := range sub {
+					if !sf.IsDir() && sf.Name() == name {
+						found = filepath.Join(p, name)
+						return
+					}
+				}
+			} else {
+				scan(p)
+			}
+		}
+	}
+	scan(root)
+	return found
+}
+
 // attributeGrow maps in-progress server bytes to this fetch by watching
 // growth between two consecutive scans: a file counts only if it was born or
 // grew since the previous scan, holds (0..total] bytes, and is the ONLY such
@@ -414,6 +459,12 @@ func startTelegramLocalDownload(bot *tgBotApi.BotAPI, chats []int64, gid, displa
 	defer cancel()
 	registerLocalFetch(gid, displayName, userID, chatID, int64(fileSize), cancel, nil)
 	defer unregisterLocalFetch(gid)
+	// remember the expected size up front: if this process dies after the
+	// server finishes fetching but before staging, startup recovery can
+	// verify the leftover temp file by size and finish the download
+	if fileSize > 0 && taskStore != nil {
+		taskStore.SetSize(gid, int64(fileSize))
+	}
 	// open the Downloading list in every relevant chat (replaces previous
 	// views per chat); delete-button flag collisions are handled by
 	// startActiveRefresh. Keeps exactly one live progress message.

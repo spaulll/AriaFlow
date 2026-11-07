@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.11.1 - 2026-11-07
+
+### Added
+- **Recovery for interrupted Telegram-forwarded downloads.** If the bot dies
+  after the local Bot API server finished fetching a forwarded file but
+  before it was staged/organized, startup recovery now finishes it: it
+  matches leftover server temp files to the task by exact expected size
+  (persisted at registration time) and a stable age of ≥2 minutes, then
+  stages + organizes them. Partial or size-unknown downloads are never
+  touched.
+
+### Fixed
+- **Blank line between GID and the system footer in yt-dlp live messages** —
+  the CPU/DISK/RAM + DL/UL footer now sits one empty line below the task
+  block, exactly like the aria2 task list.
+
 ## v0.11.0 - 2026-11-07
 
 ### Changed

@@ -8,6 +8,7 @@ package telegram
 import (
 	"ariaflow/internal/config"
 	"ariaflow/internal/extract"
+	"ariaflow/internal/users"
 	"ariaflow/tool/input"
 	aria2pkg "ariaflow/tool/input/aria2"
 	"ariaflow/tool/input/aria2/rpc"
@@ -225,6 +226,113 @@ func recoverResumeDownloads() {
 			}
 			runOrganizeDual(activeBot, adminChatIDs(), c.Gid, c.SrcPath, c.Name, c.IsTorrent)
 		}(c)
+	}
+}
+
+// tgFetchMinStableAge is how old a server-side temp file must be before
+// recovery considers it finished (a file that is still being written is
+// never touched).
+const tgFetchMinStableAge = 2 * time.Minute
+
+// telegramRecoverCandidate is one interrupted Telegram-forwarded fetch: the
+// local Bot API server already downloaded the file into its temp store, but
+// the previous bot run died before staging/organizing it.
+type telegramRecoverCandidate struct {
+	Gid     string
+	TmpName string
+	Name    string
+	Size    int64
+}
+
+// selectInterruptedTelegramCandidates finds server temp files that belong to
+// interrupted telegram fetches. A file qualifies only when:
+//   - a telegram task exists (engine "telegram", still downloading or
+//     failed) whose expected size is known and matches the file exactly;
+//   - the file has been stable (not written) for at least minAge;
+//   - the file name looks like the requested one (temp storage may add
+//     nesting/suffixes, so a loose containment match is accepted).
+//
+// Partial or size-unknown downloads never qualify.
+func selectInterruptedTelegramCandidates(tasks []users.Task, temps map[string]tempFileStat, now time.Time, minAge time.Duration) []telegramRecoverCandidate {
+	seenTmp := map[string]bool{}
+	var out []telegramRecoverCandidate
+	for _, t := range tasks {
+		if t.Engine != "telegram" || t.Name == "" || t.Size <= 0 {
+			continue
+		}
+		if t.Status != "downloading" && t.Status != "failed" {
+			continue
+		}
+		wantBase := strings.ToLower(safeOutName(t.Name))
+		if wantBase == "" {
+			continue
+		}
+		for n, st := range temps {
+			if seenTmp[n] || st.size != t.Size {
+				continue
+			}
+			if now.Sub(st.mtime) < minAge {
+				continue
+			}
+			nl := strings.ToLower(n)
+			if !strings.Contains(nl, wantBase) && !strings.Contains(wantBase, nl) {
+				continue
+			}
+			seenTmp[n] = true
+			out = append(out, telegramRecoverCandidate{Gid: t.GID, TmpName: n, Name: t.Name, Size: t.Size})
+			break
+		}
+	}
+	return out
+}
+
+// recoverInterruptedTelegramFetches finishes Telegram-forwarded downloads
+// whose fetch succeeded on the server side but whose bot-side staging never
+// ran (crash/restart between getFile and linkOrCopy). Verified by size, so
+// interrupted/partial downloads are never promoted.
+func recoverInterruptedTelegramFetches() {
+	if activeBot == nil || taskStore == nil {
+		return
+	}
+	apiDir := config.GetTelegramApiDir()
+	if apiDir == "" {
+		return
+	}
+	temps := scanTempDir()
+	if len(temps) == 0 {
+		return
+	}
+	cands := selectInterruptedTelegramCandidates(taskStore.All(), temps, time.Now(), tgFetchMinStableAge)
+	if len(cands) == 0 {
+		return
+	}
+	dl := config.GetDownloadFolder()
+	for _, c := range cands {
+		src := findTempFilePath(apiDir, c.TmpName)
+		if src == "" {
+			continue
+		}
+		if !claimOrganizeInflight(c.Gid) {
+			continue
+		}
+		go func(c telegramRecoverCandidate, src string) {
+			defer releaseOrganizeInflight(c.Gid)
+			dest := uniqueFilePath(filepath.Join(dl, safeOutName(c.Name)))
+			if err := linkOrCopy(src, dest); err != nil {
+				logger.Error("telegram recovery stage failed for %s: %v", c.Name, err)
+				if c.Gid != "" {
+					taskStore.SetStatus(c.Gid, "failed")
+				}
+				return
+			}
+			_ = os.Remove(src)
+			if c.Gid != "" {
+				taskStore.SetSize(c.Gid, c.Size)
+				taskStore.SetStatus(c.Gid, "completed")
+			}
+			logger.Info("telegram recovery: resumed interrupted fetch %s -> %s", c.Name, dest)
+			runOrganizeDual(activeBot, adminChatIDs(), c.Gid, dest, c.Name, false)
+		}(c, src)
 	}
 }
 

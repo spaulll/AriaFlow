@@ -558,6 +558,9 @@ func Aria2Bot(BotKey string, wg *sync.WaitGroup) {
 	}, false)
 	// aria2 is connected: resume downloads completed but never organized
 	recoverResumeDownloads()
+	// finish telegram-forwarded fetches that completed on the server side
+	// but were interrupted before bot-side staging
+	recoverInterruptedTelegramFetches()
 	// periodic cleanup of stale download debris (log-only)
 	startOrphanSweeper()
 
