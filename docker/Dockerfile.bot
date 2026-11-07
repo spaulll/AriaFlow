@@ -4,8 +4,10 @@
 
 # syntax=docker/dockerfile:1
 FROM golang:1.24 AS build
-# Optional: docker build --build-arg VERSION=v0.11.2
-ARG VERSION=dev
+# Optional override: docker build --build-arg VERSION=v0.11.3
+# When omitted, the version baked into the source (internal/version) is
+# used, so no environment is required to get a correct version string.
+ARG VERSION
 WORKDIR /src
 
 # Vendored deps -> no network needed during build.
@@ -17,8 +19,9 @@ COPY i18n ./i18n
 COPY model ./model
 COPY tool ./tool
 
-RUN CGO_ENABLED=0 go build -mod=vendor -trimpath \
-      -ldflags "-s -w -X ariaflow/internal/version.Version=${VERSION}" \
+RUN V=""; if [ -n "$VERSION" ]; then V="-X ariaflow/internal/version.Version=${VERSION}"; fi && \
+    CGO_ENABLED=0 go build -mod=vendor -trimpath \
+      -ldflags "-s -w $V" \
       -o /out/ariaflow ./cmd/DownloadBot
 
 FROM debian:bookworm-slim AS runtime

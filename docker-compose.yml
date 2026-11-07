@@ -47,7 +47,9 @@ services:
       context: .
       dockerfile: docker/Dockerfile.bot
       args:
-        VERSION: ${ARIAFLOW_VERSION:-dev}
+        # Optional: override the version baked into the source. Omit to
+        # use the source's version constant (no env required).
+        VERSION: ${ARIAFLOW_VERSION}
     image: ariaflow/bot:latest
     restart: unless-stopped
     depends_on:

@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.11.3 - 2026-11-07
+
+### Changed
+- **Version is now baked into the source** (`internal/version`, default
+  `v0.11.3`, bumped on each release). Docker builds report the correct
+  version with **zero configuration** — the `VERSION` build-arg /
+  `ARIAFLOW_VERSION` env is now an optional override instead of a
+  requirement.
+- `/start` version line can also append the short VCS commit when available
+  (local/git builds).
+
 ## v0.11.2 - 2026-11-07
 
 ### Added

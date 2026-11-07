@@ -1111,8 +1111,12 @@ func Aria2Bot(BotKey string, wg *sync.WaitGroup) {
 					}
 					// include bot/build info in the welcome message
 					gstat := input.ToolApp.Aria2.GlobalStat()
+					botVer := version.Version
+					if commit := version.BuildCommit(); commit != "" {
+						botVer += " (" + commit + ")"
+					}
 					msg.Text += fmt.Sprintf(i18nLoc.LocText("startAbout"),
-						version.Version,
+						botVer,
 						formatDuration(systemUptime()),
 						typeTrans.Byte2Readable(monitor.GetDiskFree(config.GetDownloadFolder())),
 						typeTrans.Byte2Readable(monitor.GetDiskTotal(config.GetDownloadFolder())),
