@@ -197,7 +197,11 @@ func recoverResumeDownloads() {
 		return
 	}
 	libRoots := stageRoots()
-	candidates := selectRecoveryCandidates(input.ToolApp.Aria2.StoppedTasks(), dl, libRoots, time.Now(), recoveryMaxAge)
+	tasks := input.ToolApp.Aria2.StoppedTasks()
+	// sweep aria2-generated <infohash>.torrent metadata files whose content
+	// already completed (keepTorrent off) - independent of task state
+	cleanupOrphanTorrentFiles(tasks)
+	candidates := selectRecoveryCandidates(tasks, dl, libRoots, time.Now(), recoveryMaxAge)
 	if len(candidates) == 0 {
 		return
 	}

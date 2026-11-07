@@ -15,18 +15,29 @@ about system information
 */
 
 func GetCpuPercent() float64 {
-	percent, _ := cpu.Percent(time.Second, false)
+	percent, err := cpu.Percent(time.Second, false)
+	if err != nil || len(percent) == 0 {
+		return 0
+	}
 	return percent[0]
 }
 
 func GetMemPercent() float64 {
-	memInfo, _ := mem.VirtualMemory()
+	memInfo, err := mem.VirtualMemory()
+	if err != nil || memInfo == nil {
+		return 0
+	}
 	return memInfo.UsedPercent
 }
 
 func GetDiskPercent(path string) float64 {
 	//parts, _ := disk.Partitions(true)
-	diskInfo, _ := disk.Usage(path)
+	diskInfo, err := disk.Usage(path)
+	if err != nil || diskInfo == nil {
+		// mount unavailable (e.g. USB/NAS hiccup) - report 0 instead of
+		// nil-pointering the live progress view
+		return 0
+	}
 	return diskInfo.UsedPercent
 }
 

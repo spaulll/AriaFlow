@@ -2,6 +2,35 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.10.0 - 2026-11-07
+
+### Fixed
+- **Magnet `.torrent` metadata files are now cleaned up reliably.** aria2
+  writes `<infohash>.torrent` into the download folder
+  (`--bt-save-metadata`); cleanup previously depended on the in-memory task
+  record surviving, so after a restart the file lingered forever even with
+  `keepTorrent=false`. Cleanup now falls back to aria2's own `infoHash`, and
+  startup recovery sweeps orphaned `<infohash>.torrent` files for completed
+  downloads.
+- **Task store is now actually persisted** (`tasks.json`) — `persist()` was
+  a no-op, so ownership, links and download history vanished on every
+  restart. Tasks now survive restarts (atomic temp+rename writes).
+- **`monitor` can no longer panic the bot** — `GetDiskPercent` dereferenced
+  a nil `disk.Usage` result (e.g. USB/NAS mount hiccup) and
+  `GetCpuPercent` indexed an empty slice; both now return 0 safely.
+- **`TMAllowDownloads` map race fixed** — the torrent file-selection map was
+  written from the Telegram handler and read from the `testTMStop`
+  goroutine without a lock; Go maps are not concurrent-safe and could fatal
+  with "concurrent map read and map write". Now mutex-guarded.
+- **Websocket RPC write errors are surfaced** — a failed `WriteJSON` now
+  triggers the reconnect loop instead of silently waiting out timeouts.
+- **Removed dead `tool/controller` code** — legacy `CopyFiles`/`RemoveFiles`
+  (panic-on-error, weak path guard) were referenced by nothing.
+- **`runOrganizeDual` deletes its "Download completed" messages when
+  organizing is disabled** instead of leaving them in the chat.
+- **Vet-clean RPC client** — `Call` value receivers containing `sync.Once`
+  flagged `copylocks`; switched to pointer receivers.
+
 ## v0.9.0 - 2026-11-07
 
 ### Fixed

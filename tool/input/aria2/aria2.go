@@ -26,7 +26,13 @@ var aria2Rpc rpc2.Client
 var TMMessageChan = make(chan string, 3)
 
 // TMAllowDownloads is Allow Torrent/Magnet download List
-var TMAllowDownloads = make(map[string]int, 0)
+// Guarded by tmAllowMu: it is written from the Telegram handler goroutine
+// (SetTMDownloadFilesAndStart) and read/cleaned from the testTMStop
+// goroutine, so an unsynchronized map would be a data race (Go fatal error).
+var (
+	tmAllowMu        sync.Mutex
+	TMAllowDownloads = make(map[string]int, 0)
+)
 var ariaDisconnectionChan = *(rpc2.CreateAriaDisconnectionChan())
 
 type Aria2 struct {
@@ -73,7 +79,13 @@ func testTMStop(TMStop func(gid string)) {
 	for {
 		gid := <-TMMessageChan
 		//log.Println(a)
-		if _, have := TMAllowDownloads[gid]; !have {
+		tmAllowMu.Lock()
+		_, have := TMAllowDownloads[gid]
+		if have {
+			delete(TMAllowDownloads, gid)
+		}
+		tmAllowMu.Unlock()
+		if !have {
 			dlInfo, err := aria2Rpc.TellStatus(gid)
 			if err != nil {
 				// transient RPC failure (e.g. aria2 restarting) must not
@@ -87,10 +99,7 @@ func testTMStop(TMStop func(gid string)) {
 				aria2Rpc.Pause(gid)
 				TMStop(gid)
 			}
-		} else {
-			delete(TMAllowDownloads, gid)
 		}
-
 	}
 }
 func disconnectionMonitoring(notifier rpc2.Notifier) {
@@ -619,7 +628,9 @@ func (a Aria2) SetTMDownloadFilesAndStart(gid string, FilesList [][2]int) {
 	}
 	// empty selection: allow the download as-is instead of slicing an
 	// empty string (panic)
+	tmAllowMu.Lock()
 	TMAllowDownloads[gid] = 0
+	tmAllowMu.Unlock()
 	// unpause with verification - fire-and-forget unpause can be lost
 	for i := 0; i < 5; i++ {
 		if _, err := aria2Rpc.Unpause(gid); err != nil {

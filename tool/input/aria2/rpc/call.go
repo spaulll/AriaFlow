@@ -150,7 +150,7 @@ func (h *httpCaller) setNotifier(ctx context.Context, u url.URL, notifer Notifie
 	return
 }
 
-func (h httpCaller) Call(method string, params, reply interface{}) (err error) {
+func (h *httpCaller) Call(method string, params, reply interface{}) (err error) {
 	payload, err := EncodeClientRequest(method, params)
 	if err != nil {
 		return
@@ -253,7 +253,13 @@ func newWebsocketCaller(ctx context.Context, uri string, timeout time.Duration, 
 					return err
 				})
 				w.conn.SetWriteDeadline(time.Now().Add(timeout))
-				w.conn.WriteJSON(req.request)
+				if err := w.conn.WriteJSON(req.request); err != nil {
+					// transport failure: surface it so the reconnect loop
+					// kicks in instead of silently waiting for timeouts
+					log.Printf("conn.WriteJSON|err:%v", err)
+					ariaDisconnectionChan <- fmt.Sprint(err)
+					return
+				}
 			}
 		}
 	}()
@@ -269,7 +275,7 @@ func (w *websocketCaller) Close() (err error) {
 	return
 }
 
-func (w websocketCaller) Call(method string, params, reply interface{}) (err error) {
+func (w *websocketCaller) Call(method string, params, reply interface{}) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), w.timeout)
 	defer cancel()
 	select {

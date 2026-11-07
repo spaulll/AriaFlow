@@ -246,6 +246,9 @@ func runOrganizeDual(bot *tgBotApi.BotAPI, chats []int64, gid, srcPath, displayN
 
 	cfg := config.GetOrganizeConfig()
 	if !cfg.Enabled {
+		// organize disabled: drop the "Download completed" pair instead of
+		// leaving it in the chat forever
+		deleteChatMsgs(bot, completedMsgs)
 		return
 	}
 

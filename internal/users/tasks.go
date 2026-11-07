@@ -1,6 +1,8 @@
 package users
 
 import (
+	"encoding/json"
+	"os"
 	"sync"
 	"time"
 )
@@ -29,6 +31,11 @@ type TaskStore struct {
 // NewTaskStore opens the persisted task store.
 func NewTaskStore(path string) *TaskStore {
 	t := &TaskStore{path: path, tasks: map[string]Task{}}
+	if path != "" {
+		if b, err := os.ReadFile(path); err == nil {
+			_ = json.Unmarshal(b, &t.tasks)
+		}
+	}
 	return t
 }
 
@@ -124,5 +131,19 @@ func sortByAdded(tasks []Task) {
 }
 
 func (t *TaskStore) persist() {
-	// best effort: task history is ephemeral state, persistence is a bonus
+	// best effort: never fail a download flow because bookkeeping could not
+	// be written. Write atomically (temp + rename) so a crash mid-write
+	// never corrupts the saved state.
+	if t.path == "" {
+		return
+	}
+	b, err := json.Marshal(t.tasks)
+	if err != nil {
+		return
+	}
+	tmp := t.path + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return
+	}
+	_ = os.Rename(tmp, t.path)
 }
