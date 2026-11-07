@@ -74,8 +74,9 @@ func startYtdlpDownload(bot *tgBotApi.BotAPI, ownerChatID int64, rawURL string, 
 		taskGID = gid[0]
 	}
 
-	// announce
-	live := NewDualProgressMsg(bot, chats, "⬇️ Downloading\n"+taskProgressBar(0)+"\n"+rawURL)
+	// announce - same frame as the aria2 task list
+	live := NewDualProgressMsgMD(bot, chats,
+		renderTaskProgress(taskProgressView{Filename: rawURL, GID: taskGID})+systemInfoFooter())
 	var lastText string
 	var lastUpdate time.Time
 	report := func(p ytdlp.Progress) {
@@ -86,22 +87,16 @@ func startYtdlpDownload(bot *tgBotApi.BotAPI, ownerChatID int64, rawURL string, 
 		var text string
 		switch p.Stage {
 		case "downloading":
-			lines := []string{
-				"⬇️ Downloading",
-				taskProgressBar(p.Percent),
-			}
-			if p.TotalBytes > 0 {
-				lines = append(lines, fmt.Sprintf("Downloaded: %s of %s",
-					typeTrans.Byte2Readable(float64(p.DownloadedBytes)),
-					typeTrans.Byte2Readable(float64(p.TotalBytes))))
-			}
-			if p.SpeedBytes > 0 {
-				lines = append(lines, "Speed: "+typeTrans.Byte2Readable(float64(p.SpeedBytes))+"/s")
-			}
-			if p.ETASeconds > 0 {
-				lines = append(lines, "ETA: "+formatDuration(time.Duration(p.ETASeconds)*time.Second))
-			}
-			text = strings.Join(lines, "\n") + "\n" + rawURL
+			// identical structure to the aria2 task list
+			text = renderTaskProgress(taskProgressView{
+				Filename:   rawURL,
+				Percent:    p.Percent,
+				Downloaded: p.DownloadedBytes,
+				Total:      p.TotalBytes,
+				SpeedBps:   float64(p.SpeedBytes),
+				ETASeconds: float64(p.ETASeconds),
+				GID:        taskGID,
+			}) + systemInfoFooter()
 		case "processing":
 			detail := p.Detail
 			if i := strings.Index(detail, "]"); i >= 0 {
@@ -111,9 +106,10 @@ func startYtdlpDownload(bot *tgBotApi.BotAPI, ownerChatID int64, rawURL string, 
 			if detail == "" {
 				detail = "Processing"
 			}
-			text = "⬇️ Downloading\n" +
-				taskProgressBar(100) + "\n" +
-				detail + "..."
+			text = "*Filename:* `" + strings.ReplaceAll(rawURL, "`", "") + "`\n" +
+				"`" + taskProgressBar(100) + "`\n" +
+				"*Status:* `" + strings.ReplaceAll(detail, "`", "") + "`\n" +
+				"*GID:* `" + strings.ReplaceAll(taskGID, "`", "") + "`"
 		case "done":
 			return
 		default:

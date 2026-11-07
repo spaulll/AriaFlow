@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.11.0 - 2026-11-07
+
+### Changed
+- **Unified live download message structure.** Telegram-forwarded files and
+  yt-dlp downloads now render the exact same progress frame as normal direct
+  URLs in the aria2 task list:
+  `Filename` → progress bar + percent → `Downloaded` → `Speed` → `ETA` →
+  `GID`, followed by the CPU/DISK/RAM + DL/UL system line.
+  - Telegram-forwarded files (local engine) use the frame in the "Downloading"
+    view, including the system footer when no aria2 tasks are shown.
+  - yt-dlp live messages now use the same frame (previously a free-form
+    "⬇️ Downloading / bar / URL" block), rendered with Markdown like the
+    aria2 list, with the source URL as the Filename and the task GID shown.
+  - Processing stage shows the same envelope with a Status line.
+- **System-info footer is cached for 5 s** (`cpu.Percent` samples for 1 s;
+  recomputing every tick would stall progress updates).
+
 ## v0.10.0 - 2026-11-07
 
 ### Fixed

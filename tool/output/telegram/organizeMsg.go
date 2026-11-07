@@ -27,11 +27,24 @@ type OrganizeProgressMsg struct {
 	bot       *tgBotApi.BotAPI
 	chatID    int64
 	messageID int
+	parseMode string
 }
 
 // NewOrganizeProgressMsg sends the initial message and returns a handle.
 func NewOrganizeProgressMsg(bot *tgBotApi.BotAPI, chatID int64, text string) *OrganizeProgressMsg {
+	return newOrganizeProgressMsg(bot, chatID, text, "")
+}
+
+// NewOrganizeProgressMsgMD is the Markdown variant of
+// NewOrganizeProgressMsg (used by live download views that render the
+// aria2-style progress frame).
+func NewOrganizeProgressMsgMD(bot *tgBotApi.BotAPI, chatID int64, text string) *OrganizeProgressMsg {
+	return newOrganizeProgressMsg(bot, chatID, text, "Markdown")
+}
+
+func newOrganizeProgressMsg(bot *tgBotApi.BotAPI, chatID int64, text, parseMode string) *OrganizeProgressMsg {
 	msg := tgBotApi.NewMessage(chatID, text)
+	msg.ParseMode = parseMode
 	res, err := bot.Send(msg)
 	if err != nil {
 		logger.Error("send organize message failed: %v", err)
@@ -39,7 +52,7 @@ func NewOrganizeProgressMsg(bot *tgBotApi.BotAPI, chatID int64, text string) *Or
 	}
 	// track for cleanup if the process dies mid-run
 	inflightAdd(chatID, res.MessageID)
-	return &OrganizeProgressMsg{bot: bot, chatID: chatID, messageID: res.MessageID}
+	return &OrganizeProgressMsg{bot: bot, chatID: chatID, messageID: res.MessageID, parseMode: parseMode}
 }
 
 // Update edits the message text.
@@ -48,6 +61,7 @@ func (m *OrganizeProgressMsg) Update(text string) {
 		return
 	}
 	edit := tgBotApi.NewEditMessageText(m.chatID, m.messageID, text)
+	edit.ParseMode = m.parseMode
 	if _, err := m.bot.Send(edit); err != nil {
 		logger.Debug("edit organize message failed: %v", err)
 	}

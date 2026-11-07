@@ -141,29 +141,36 @@ func formatLocalActive(requester int64) string {
 		// (a literal code span) where escapes would show up raw; only
 		// backticks themselves must go.
 		name := strings.ReplaceAll(f.name, "`", "")
-		head := fmt.Sprintf("*Filename:* `%s`\n", name)
 		if f.downloaded >= 0 && f.total > 0 {
-			// real byte progress attributed from the server temp store
+			// real byte progress attributed from the server temp store:
+			// same frame as the aria2 task list
 			pct := float64(f.downloaded) * 100.0 / float64(f.total)
 			if pct > 100 {
 				pct = 100
 			}
-			head += taskProgressBar(pct) + "\n" +
-				fmt.Sprintf("*Downloaded:* %s *of* %s",
-					typeTrans.Byte2Readable(float64(f.downloaded)), size)
-			if f.rate > 0 {
-				head += fmt.Sprintf("\n*Speed:* %s/s", typeTrans.Byte2Readable(f.rate))
-				left := f.total - f.downloaded
-				if left > 0 {
-					head += fmt.Sprintf(" *ETA:* %s", formatDuration(time.Duration(float64(left)/f.rate)*time.Second))
-				}
+			eta := float64(0)
+			if f.rate > 0 && f.total > f.downloaded {
+				eta = float64(f.total-f.downloaded) / f.rate
 			}
+			b.WriteString(renderTaskProgress(taskProgressView{
+				Filename:   name,
+				Percent:    pct,
+				Downloaded: f.downloaded,
+				Total:      f.total,
+				SpeedBps:   f.rate,
+				ETASeconds: eta,
+				GID:        f.gid,
+			}))
 		} else {
-			head += "📥 Fetching from Telegram...\n" +
+			// fetching from the server temp store: sizes are not known yet,
+			// but keep the same overall frame
+			head := fmt.Sprintf("*Filename:* `%s`\n", name)
+			head += "`" + taskProgressBar(0) + "`\n" +
+				"📥 Fetching from Telegram...\n" +
 				fmt.Sprintf("*Size:* %s *Elapsed:* %s", size, formatDuration(time.Since(f.start)))
+			head += fmt.Sprintf("\n*GID:* `%s`", f.gid)
+			b.WriteString(head)
 		}
-		head += fmt.Sprintf("\n*GID:* `%s`", f.gid)
-		b.WriteString(head)
 	}
 	return b.String()
 }

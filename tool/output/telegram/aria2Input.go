@@ -450,6 +450,11 @@ func activeRefresh(requestChatID int64, chatMsgID int, bot *tgBotApi.BotAPI, tic
 		default:
 			text = i18nLoc.LocText("noActiveTask")
 		}
+		if res == "" && local != "" {
+			// local-only view: add the same system-info footer the aria2
+			// list carries, so the live view stays consistent
+			text += "\n" + systemInfoFooter()
+		}
 		if MessageID == 0 {
 			msg := tgBotApi.NewMessage(requestChatID, text)
 			msg.ParseMode = "Markdown"

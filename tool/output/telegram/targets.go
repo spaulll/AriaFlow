@@ -267,6 +267,21 @@ func NewDualProgressMsg(bot *tgBotApi.BotAPI, chats []int64, text string) *DualP
 	return d
 }
 
+// NewDualProgressMsgMD is the Markdown variant of NewDualProgressMsg (used
+// by live download views that render the aria2-style progress frame).
+func NewDualProgressMsgMD(bot *tgBotApi.BotAPI, chats []int64, text string) *DualProgressMsg {
+	d := &DualProgressMsg{}
+	for _, chat := range dedupChats(chats) {
+		if m := NewOrganizeProgressMsgMD(bot, chat, text); m != nil {
+			d.msgs = append(d.msgs, m)
+		}
+	}
+	if len(d.msgs) == 0 {
+		return nil
+	}
+	return d
+}
+
 // Update edits every mirrored message.
 func (d *DualProgressMsg) Update(text string) {
 	if d == nil {

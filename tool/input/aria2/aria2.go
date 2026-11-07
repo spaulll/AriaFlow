@@ -890,6 +890,17 @@ func (a Aria2) GetVersion() string {
 	return version.Version
 }
 
+// GlobalStat exposes aria2's global transfer counters. Returns zero values
+// on RPC failure (never panics - used by status footers).
+func (a Aria2) GlobalStat() rpc2.GlobalStatInfo {
+	info, err := aria2Rpc.GetGlobalStat()
+	if err != nil {
+		logger.Error("getGlobalStat failed: %v", err)
+		return rpc2.GlobalStatInfo{}
+	}
+	return info
+}
+
 // ResolveStoppedPath resolves the on-disk path and display name of a
 // download from its (already fetched) aria2 status. For torrents it returns
 // the torrent root directory (multi-file) or the file itself (single-file),
