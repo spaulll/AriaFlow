@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.11.2 - 2026-11-07
+
+### Added
+- **Bot version in the `/start` welcome message** — shows the build version
+  (injected via `-ldflags "-X ariaflow/internal/version.Version=…"`),
+  host uptime, storage free/total, and aria2 active/stopped counts. Docker
+  builds accept `VERSION` build-arg (compose: `ARIAFLOW_VERSION`).
+
 ## v0.11.1 - 2026-11-07
 
 ### Added

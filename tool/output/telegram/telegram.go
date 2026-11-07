@@ -4,6 +4,7 @@ import (
 	i18nLoc "ariaflow/i18n"
 	"ariaflow/internal/config"
 	"ariaflow/internal/users"
+	"ariaflow/internal/version"
 	"ariaflow/internal/ytdlp"
 	"ariaflow/tool/displayUtil/gotree"
 	"ariaflow/tool/input"
@@ -25,6 +26,23 @@ import (
 
 	tgBotApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
+// systemUptime returns host uptime from /proc/uptime (0 when unavailable).
+func systemUptime() time.Duration {
+	b, err := os.ReadFile("/proc/uptime")
+	if err != nil {
+		return 0
+	}
+	fields := strings.Fields(string(b))
+	if len(fields) == 0 {
+		return 0
+	}
+	secs, err := strconv.ParseFloat(fields[0], 64)
+	if err != nil {
+		return 0
+	}
+	return time.Duration(secs) * time.Second
+}
 
 var deleteMes tgBotApi.DeleteMessageConfig = tgBotApi.DeleteMessageConfig{
 	ChannelUsername: "",
@@ -1091,6 +1109,16 @@ func Aria2Bot(BotKey string, wg *sync.WaitGroup) {
 					if monitor.IsLocal(config.GetAria2Server()) {
 						msg.Text += "\n" + i18nLoc.LocText("inLocal")
 					}
+					// include bot/build info in the welcome message
+					gstat := input.ToolApp.Aria2.GlobalStat()
+					msg.Text += fmt.Sprintf(i18nLoc.LocText("startAbout"),
+						version.Version,
+						formatDuration(systemUptime()),
+						typeTrans.Byte2Readable(monitor.GetDiskFree(config.GetDownloadFolder())),
+						typeTrans.Byte2Readable(monitor.GetDiskTotal(config.GetDownloadFolder())),
+						gstat.NumActive,
+						gstat.NumStopped,
+					)
 					//msg.Text += "\n" + locText("nowTMMode") + locText("tmMode"+aria2Set.TMMode)
 					if isAdminID(senderID) {
 						msg.ReplyMarkup = adminKeyboard

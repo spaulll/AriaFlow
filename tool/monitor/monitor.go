@@ -41,6 +41,26 @@ func GetDiskPercent(path string) float64 {
 	return diskInfo.UsedPercent
 }
 
+// GetDiskFree returns free bytes on the filesystem holding path (0 when the
+// mount is unavailable).
+func GetDiskFree(path string) float64 {
+	diskInfo, err := disk.Usage(path)
+	if err != nil || diskInfo == nil {
+		return 0
+	}
+	return float64(diskInfo.Free)
+}
+
+// GetDiskTotal returns total bytes on the filesystem holding path (0 when
+// the mount is unavailable).
+func GetDiskTotal(path string) float64 {
+	diskInfo, err := disk.Usage(path)
+	if err != nil || diskInfo == nil {
+		return 0
+	}
+	return float64(diskInfo.Total)
+}
+
 // IsLocal checks if the uri is local
 func IsLocal(uri string) bool {
 	_, err := os.Stat(config.GetDownloadFolder())

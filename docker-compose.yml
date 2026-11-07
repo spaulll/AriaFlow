@@ -46,6 +46,8 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.bot
+      args:
+        VERSION: ${ARIAFLOW_VERSION:-dev}
     image: ariaflow/bot:latest
     restart: unless-stopped
     depends_on:

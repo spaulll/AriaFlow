@@ -22,6 +22,7 @@
   "taskNowStopAll": "All tasks have been stopped",
   "taskNowResumeAll": "All tasks have been resumed",
   "commandStartRes": "🤖 Aria2 connected, version %s. Send me a link to start downloading.",
+  "startAbout": "\n\n* Bot version: %s\n* Uptime: %s\n* Storage: %s free of %s\n* Active: %s | Stopped: %s",
   "commandHelpRes": "🤖 A Telegram Bot that controls your Aria2 server.",
   "commandMyIDRes": "Your user ID is `%d`",
   "noActiveTask": "There are no tasks in progress!",
